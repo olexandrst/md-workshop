@@ -10,13 +10,14 @@
     {% endwith %}
     <input type="hidden" name="next" value="{{ next }}">
     <label class="field">
+      <span>Логін</span>
+      <input class="input" type="text" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+    </label>
+    <label class="field">
       <span>Пароль</span>
-      <input class="input" type="password" name="password" autocomplete="current-password" required autofocus>
+      <input class="input" type="password" name="password" autocomplete="current-password" required>
     </label>
     <button class="btn btn-primary btn-block" type="submit">Увійти</button>
-    {% if default_password %}
-      <p class="hint">Пароль за замовчуванням — <b>admin</b>. Змініть його через змінну ADMIN_PASSWORD перед воркшопом.</p>
-    {% endif %}
     <p class="hint"><a href="{{ url_for('public.index') }}">Сторінка учасника →</a></p>
   </form>
 </main>

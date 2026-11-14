@@ -14,6 +14,7 @@ def app(tmp_path, monkeypatch):
     database_url = os.environ.get("TEST_DATABASE_URL") or f"sqlite:///{tmp_path / 'test.db'}"
     monkeypatch.setenv("DATABASE_URL", database_url)
     monkeypatch.setenv("SECRET_KEY", "test-secret")
+    monkeypatch.setenv("ADMIN_USERNAME", "mid")
     monkeypatch.setenv("ADMIN_PASSWORD", "s3cret")
     monkeypatch.delenv("PUBLIC_URL", raising=False)
     app = create_app({"TESTING": True, "SEED_DEMO": False})
@@ -47,7 +48,7 @@ def client(app):
 @pytest.fixture()
 def admin(app):
     c = api_client(app)
-    response = c.post("/admin/login", data={"password": "s3cret"})
+    response = c.post("/admin/login", data={"username": "mid", "password": "s3cret"})
     assert response.status_code == 302
     return c
 

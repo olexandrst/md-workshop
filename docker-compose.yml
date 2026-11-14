@@ -28,7 +28,8 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://workshop:workshop@db:5432/workshop
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-mid}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-digital}
       SECRET_KEY: ${SECRET_KEY:-local-dev-secret-change-me}
       PUBLIC_URL: ${PUBLIC_URL:-}
       SEED_DEMO: ${SEED_DEMO:-true}

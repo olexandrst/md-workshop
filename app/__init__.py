@@ -93,7 +93,4 @@ def create_app(overrides: dict | None = None) -> Flask:
         response.headers.setdefault("Referrer-Policy", "same-origin")
         return response
 
-    if app.config.get("ADMIN_PASSWORD_IS_DEFAULT"):
-        log.warning("ADMIN_PASSWORD не задано — використовується пароль за замовчуванням 'admin'.")
-
     return app

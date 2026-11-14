@@ -195,13 +195,15 @@ def test_admin_requires_login(client):
     assert client.get("/api/admin/state").status_code == 401
     response = client.get("/admin")
     assert response.status_code == 302 and "/admin/login" in response.headers["Location"]
-    response = client.post("/admin/login", data={"password": "wrong"})
-    assert response.status_code == 200 and "Невірний пароль" in response.get_data(as_text=True)
+    response = client.post("/admin/login", data={"username": "mid", "password": "wrong"})
+    assert response.status_code == 200 and "Невірний логін або пароль" in response.get_data(as_text=True)
+    response = client.post("/admin/login", data={"username": "admin", "password": "s3cret"})
+    assert response.status_code == 200 and "Невірний логін або пароль" in response.get_data(as_text=True)
     assert client.post("/api/admin/ideas", json={"title": "x"}).status_code == 401
 
 
 def test_admin_login_redirect_is_safe(client):
-    response = client.post("/admin/login", data={"password": "s3cret", "next": "https://evil.example/"})
+    response = client.post("/admin/login", data={"username": "mid", "password": "s3cret", "next": "https://evil.example/"})
     assert response.headers["Location"].endswith("/admin")
 
 
@@ -305,6 +307,16 @@ def test_mutating_api_requires_fetch_header(app, make_idea):
     assert response.status_code == 403
     assert bare.get("/api/state").status_code == 200
     admin = app.test_client()
-    admin.post("/admin/login", data={"password": "s3cret"})
+    admin.post("/admin/login", data={"username": "mid", "password": "s3cret"})
     assert admin.post("/api/admin/reset-votes").status_code == 403
     assert admin.delete(f"/api/admin/ideas/{idea['id']}").status_code == 403
+
+
+def test_default_admin_credentials(monkeypatch):
+    monkeypatch.delenv("ADMIN_USERNAME", raising=False)
+    monkeypatch.delenv("ADMIN_PASSWORD", raising=False)
+    monkeypatch.setenv("SECRET_KEY", "x")
+    from app.config import load_config
+
+    config = load_config()
+    assert (config["ADMIN_USERNAME"], config["ADMIN_PASSWORD"]) == ("mid", "digital")

@@ -23,8 +23,7 @@ def main() -> None:
     print("\n  Голосування на воркшопі запущено")
     print(f"  Екран ведучого:   http://localhost:{port}/admin")
     print(f"  Для учасників:    http://{ip}:{port}/")
-    if app.config.get("ADMIN_PASSWORD_IS_DEFAULT"):
-        print("  Пароль ведучого:  admin  (задайте ADMIN_PASSWORD у файлі .env)")
+    print(f"  Логін ведучого:   {app.config['ADMIN_USERNAME']}")
     print(f"  База даних:       {app.config['SQLALCHEMY_DATABASE_URI'].split('@')[-1]}")
     print("  Зупинити: Ctrl+C\n")
 

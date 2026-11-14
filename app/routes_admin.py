@@ -44,7 +44,8 @@ bp = Blueprint("admin", __name__)
 def _password_fingerprint() -> str:
     """Відбиток пароля в сесії: зміна ADMIN_PASSWORD автоматично розлогінює всі адмін-сесії."""
     secret = current_app.config["SECRET_KEY"].encode()
-    return hmac.new(secret, current_app.config["ADMIN_PASSWORD"].encode(), hashlib.sha256).hexdigest()[:24]
+    credentials = f'{current_app.config["ADMIN_USERNAME"]}\n{current_app.config["ADMIN_PASSWORD"]}'
+    return hmac.new(secret, credentials.encode(), hashlib.sha256).hexdigest()[:24]
 
 
 def is_admin() -> bool:
@@ -75,17 +76,19 @@ def _safe_next(target: str | None) -> str:
 @bp.route("/admin/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
-        if hmac.compare_digest(password.encode(), current_app.config["ADMIN_PASSWORD"].encode()):
+        username_ok = hmac.compare_digest(username.encode(), current_app.config["ADMIN_USERNAME"].encode())
+        password_ok = hmac.compare_digest(password.encode(), current_app.config["ADMIN_PASSWORD"].encode())
+        if username_ok and password_ok:
             session.permanent = True
             session["admin"] = _password_fingerprint()
             return redirect(_safe_next(request.form.get("next")))
-        flash("Невірний пароль")
+        flash("Невірний логін або пароль")
     return render_template(
         "login.html",
         workshop=get_workshop(),
         next=request.args.get("next", ""),
-        default_password=current_app.config.get("ADMIN_PASSWORD_IS_DEFAULT"),
     )
 
 
