@@ -1002,3 +1002,26 @@ body {
 .btn-primary { box-shadow: 0 4px 12px rgba(227, 6, 26, 0.16); }
 .brand-chip { box-shadow: none; border-color: var(--line); }
 .progress-bar i { background: var(--accent); }
+
+/* Бізнес-ефекти — зелені: м'який зелений фон, темно-зелений текст, зелені іконки */
+:root { --fx-bg: #eaf6ee; --fx-border: #cfe9d8; --fx-ink: #14532d; --fx-ink-2: #3f6b51; --fx-icon: #1f8a4c; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --fx-bg: #16291e; --fx-border: #24432f; --fx-ink: #c9f0d6; --fx-ink-2: #9ccfb0; --fx-icon: #4fd283; }
+}
+:root[data-theme="dark"] { --fx-bg: #16291e; --fx-border: #24432f; --fx-ink: #c9f0d6; --fx-ink-2: #9ccfb0; --fx-icon: #4fd283; }
+
+.effects li { background: var(--fx-bg); border: 1px solid var(--fx-border); color: var(--fx-ink-2); }
+.effects li b { color: var(--fx-ink); font-weight: 600; }
+.effects li .fx-detail { color: var(--fx-ink-2); }
+.effects li .fx-icon { color: var(--fx-icon); }
+.effects li.fx-custom { color: var(--fx-ink); }
+.effects li.fx-custom::before { background: var(--fx-icon); }
+.tile-effects li { font-size: clamp(12.5px, .78vw, 15px); padding: 4px 11px; }
+
+.fx-chip .fx-icon { color: var(--fx-icon); }
+.fx-chip:hover { border-color: var(--fx-icon); }
+.fx-chip[aria-pressed="true"] { background: var(--fx-bg); border-color: var(--fx-icon); color: var(--fx-ink); }
+.fx-chip[aria-pressed="true"]::after { color: var(--fx-icon); }
+.fx-tag { background: var(--fx-bg); color: var(--fx-ink); }
+.fx-tag .fx-icon { color: var(--fx-icon); }
+.fx-tag.custom { background: var(--surface-2); color: var(--text-2); }
