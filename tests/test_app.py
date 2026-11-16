@@ -216,7 +216,7 @@ def test_admin_session_invalidated_when_password_changes(app, admin):
 def test_presenter_page(admin):
     response = admin.get("/admin")
     assert response.status_code == 200
-    assert "Режим презентації" in response.get_data(as_text=True)
+    assert "Презентація" in response.get_data(as_text=True) and "tiles" in response.get_data(as_text=True)
 
 
 def test_idea_crud_with_effects(admin, make_participant):
@@ -320,3 +320,14 @@ def test_default_admin_credentials(monkeypatch):
 
     config = load_config()
     assert (config["ADMIN_USERNAME"], config["ADMIN_PASSWORD"]) == ("mid", "digital")
+
+
+def test_new_ideas_appear_on_top(admin, make_idea, client):
+    make_idea("Перша")
+    make_idea("Друга")
+    make_idea("Третя")
+    titles = [i["title"] for i in client.get("/api/state").get_json()["ideas"]]
+    assert titles == ["Третя", "Друга", "Перша"]
+    state = admin.get("/api/admin/state").get_json()
+    assert [i["title"] for i in state["ideas"]] == ["Третя", "Друга", "Перша"]
+    assert state["server_time"] and state["ideas"][0]["created_at"]

@@ -1,12 +1,13 @@
-/* Екран ведучого: живі результати для проєктора + керування ідеями та воркшопом. */
+/* Екран ведучого: плитки з живими результатами для проєктора + керування ідеями та воркшопом. */
 (function () {
   "use strict";
 
-  const { api, el, plural, fmt, FORMS, SCALE, segBar, toast, poller, boot } = window.WS;
+  const { api, el, plural, fmt, FORMS, SCALE, toast, poller, boot, stars, setStars, isNewIdea } = window.WS;
   const $ = (id) => document.getElementById(id);
   const POLL_MS = 1500;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const SCORES_DESC = SCALE.map((s) => s.score).sort((a, b) => b - a);
+  const SCORES_DESC = SCALE.map((s) => s.score).sort((a, b) => b - a); // 5, 3, 2, 1, 0
+  const scaleOf = (score) => SCALE.find((s) => s.score === score);
 
   const store = {
     get(key, fallback) { try { return localStorage.getItem(key) ?? fallback; } catch (e) { return fallback; } },
@@ -15,13 +16,13 @@
 
   const state = {
     data: null,
-    sort: store.get("ws-sort", "rank") === "order" ? "order" : "rank",
+    sort: store.get("ws-sort-v2", "order") === "rank" ? "rank" : "order",
     present: store.get("ws-present", "0") === "1",
-    compact: store.get("ws-compact", "0") === "1",
     totals: new Map(),
     editingIdeaId: null,
+    spotlightId: null,
   };
-  const cards = new Map(); // ideaId -> {root, parts}
+  const tiles = new Map(); // ideaId -> {root, parts}
 
   const ICONS = {
     up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
@@ -33,7 +34,10 @@
   function iconButton(icon, label, onClick, extraClass) {
     const button = el("button", { type: "button", class: `icon-btn ${extraClass || ""}`, title: label, "aria-label": label });
     button.innerHTML = ICONS[icon];
-    button.addEventListener("click", onClick);
+    button.addEventListener("click", (event) => {
+      event.stopPropagation(); // не відкривати spotlight при кліку на кнопку плитки
+      onClick();
+    });
     return button;
   }
 
@@ -45,9 +49,7 @@
       apply(data);
       return data;
     } catch (err) {
-      if (err.status === 401) {
-        window.location.href = "/admin/login?next=/admin";
-      }
+      if (err.status === 401) window.location.href = "/admin/login?next=/admin";
       throw err;
     }
   }
@@ -72,7 +74,7 @@
     document.title = `Екран ведучого · ${ws.title}`;
     $("ws-title").textContent = ws.title;
     $("ws-desc").textContent = ws.description;
-    $("ws-desc").hidden = !ws.description;
+    $("ws-desc").classList.toggle("is-empty", !ws.description);
 
     const pill = $("voting-pill");
     pill.textContent = ws.voting_open ? "Голосування відкрите" : "Голосування закрите";
@@ -91,137 +93,157 @@
     $("qr-overlay-url").textContent = shortUrl;
     $("url-warning").hidden = !/^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(shortUrl);
 
-    $("sort-note").textContent = state.sort === "rank"
-      ? "Рейтинг: сума балів, далі середній бал"
-      : "Порядок обговорення";
-
-    renderIdeas(d);
+    renderTiles(d);
+    renderSpotlight();
     renderSettingsLive(d);
+    syncLayout();
   }
 
   function renderLegend() {
     $("legend").replaceChildren(
-      ...SCALE.map((s) =>
-        el("span", { class: "legend-item" }, el("span", { class: `sw s${s.score}` }), el("b", { text: s.score }), s.label)
+      ...SCORES_DESC.map((score) =>
+        el("span", { class: "legend-item", title: scaleOf(score).label },
+          score ? stars(score, "xs") : el("span", { class: "zero-mark", text: "0" }),
+          scaleOf(score).short)
       )
     );
   }
 
   function sortedIdeas(d) {
-    const ideas = d.ideas.slice();
+    const ideas = d.ideas.slice(); // сервер віддає «за порядком»: нові зверху
     if (state.sort === "rank") ideas.sort((a, b) => a.results.rank - b.results.rank);
     return ideas;
   }
 
-  function renderIdeas(d) {
+  function medalClass(r) {
+    return r.votes > 0 && r.rank <= 3 ? `medal-${r.rank}` : "";
+  }
+
+  function renderTiles(d) {
     const container = $("ideas");
     const ideas = sortedIdeas(d);
 
-    // FLIP: запам'ятовуємо позиції до перестановки
+    // FLIP: позиції плиток до перестановки
     const before = new Map();
-    if (!reduceMotion) for (const [id, card] of cards) before.set(id, card.root.getBoundingClientRect().top);
+    if (!reduceMotion) for (const [id, tile] of tiles) before.set(id, tile.root.getBoundingClientRect());
 
     const alive = new Set(ideas.map((i) => i.id));
-    for (const [id, card] of cards) {
+    for (const [id, tile] of tiles) {
       if (!alive.has(id)) {
-        card.root.remove();
-        cards.delete(id);
+        tile.root.remove();
+        tiles.delete(id);
         state.totals.delete(id);
       }
     }
 
-    const emptyNode = container.querySelector(".pr-empty");
+    const emptyNode = container.querySelector(".tiles-empty");
     if (!ideas.length) {
       if (!emptyNode) {
         container.replaceChildren(
-          el("div", { class: "pr-empty" }, "Ідей поки немає. ", el("span", { class: "admin-only", text: "Натисніть «Нова ідея», щоб додати першу." }))
+          el("div", { class: "tiles-empty" }, "Ідей поки немає. ",
+            el("span", { class: "admin-only", text: "Натисніть «+ Ідея», щоб додати першу." }))
         );
       }
       return;
     }
     if (emptyNode) emptyNode.remove();
 
-    const ids = d.ideas.map((i) => i.id); // порядок обговорення
+    const orderIds = d.ideas.map((i) => i.id);
     ideas.forEach((idea, index) => {
-      let card = cards.get(idea.id);
-      if (!card) {
-        card = createCard(idea.id);
-        cards.set(idea.id, card);
+      let tile = tiles.get(idea.id);
+      if (!tile) {
+        tile = createTile(idea.id);
+        tiles.set(idea.id, tile);
       }
-      updateCard(card, idea, index, ids, d.workshop);
-      if (container.children[index] !== card.root) container.insertBefore(card.root, container.children[index] || null);
+      updateTile(tile, idea, orderIds, d);
+      if (container.children[index] !== tile.root) container.insertBefore(tile.root, container.children[index] || null);
     });
 
     if (!reduceMotion) {
-      for (const [id, card] of cards) {
-        const top = before.get(id);
-        if (top === undefined) continue;
-        const dy = top - card.root.getBoundingClientRect().top;
-        if (Math.abs(dy) < 2) continue;
-        card.root.style.transition = "none";
-        card.root.style.transform = `translateY(${dy}px)`;
+      for (const [id, tile] of tiles) {
+        const prev = before.get(id);
+        if (!prev) continue;
+        const now = tile.root.getBoundingClientRect();
+        const dx = prev.left - now.left;
+        const dy = prev.top - now.top;
+        if (Math.abs(dx) < 2 && Math.abs(dy) < 2) continue;
+        tile.root.style.transition = "none";
+        tile.root.style.transform = `translate(${dx}px, ${dy}px)`;
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            card.root.style.transition = "transform 650ms cubic-bezier(.2,.8,.2,1)";
-            card.root.style.transform = "";
+            tile.root.style.transition = "transform 700ms cubic-bezier(.2,.8,.2,1)";
+            tile.root.style.transform = "";
           });
         });
       }
     }
   }
 
-  function createCard(ideaId) {
+  function createTile(ideaId) {
     const p = {};
-    p.rank = el("div", { class: "pr-rank" });
-    p.title = el("h2");
-    p.desc = el("p", { class: "pr-idea-desc pre-line" });
-    p.effects = el("ul", { class: "effects", "aria-label": "Бізнес-ефекти" });
+    p.rank = el("div", { class: "rank-badge" });
+    p.title = el("h2", { class: "tile-title" });
+    p.newBadge = el("span", { class: "new-badge", text: "Нова" });
+    p.effects = el("ul", { class: "effects tile-effects", "aria-label": "Бізнес-ефекти" });
+    p.avgStars = stars(0, "lg");
+    p.avgNum = el("b", { class: "avg-num" });
+    p.total = el("b", { class: "total-num" });
+    p.totalUnit = el("span", { class: "total-unit" });
+    p.votes = el("span", { class: "total-votes" });
+    p.hist = el("div", { class: "hist" });
     p.up = iconButton("up", "Вище", () => moveIdea(ideaId, -1));
     p.down = iconButton("down", "Нижче", () => moveIdea(ideaId, 1));
-    p.actions = el(
+    const actions = el(
       "div",
-      { class: "pr-actions admin-only" },
+      { class: "tile-actions admin-only" },
       p.up,
       p.down,
       iconButton("edit", "Редагувати", () => openIdeaModal(ideaId)),
       iconButton("trash", "Видалити", () => deleteIdea(ideaId), "danger")
     );
-    p.total = el("span", { class: "pr-total" });
-    p.unit = el("span", { class: "pr-total-unit" });
-    p.meta = el("span", { class: "pr-meta" });
-    p.bar = el("div");
-    p.voters = el("div", { class: "voters" });
     const root = el(
       "article",
-      { class: "pr-idea", dataset: { id: ideaId } },
-      p.rank,
-      el("div", { class: "pr-info" }, p.title, p.desc, p.effects, p.actions),
+      { class: "tile", dataset: { id: ideaId }, tabindex: "0", title: "Відкрити на весь екран" },
+      el("div", { class: "tile-head" }, p.rank, p.title, p.newBadge),
+      p.effects,
       el(
         "div",
-        { class: "pr-results" },
-        el("div", { class: "pr-scoreline" }, el("span", null, p.total, p.unit), p.meta),
-        p.bar,
-        p.voters
-      )
+        { class: "tile-score" },
+        el("div", { class: "tile-avg" }, p.avgStars, p.avgNum),
+        el("div", { class: "tile-total" }, el("span", null, p.total, p.totalUnit), p.votes)
+      ),
+      p.hist,
+      actions
     );
+    root.addEventListener("click", () => openSpotlight(ideaId));
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && event.target === root) openSpotlight(ideaId);
+    });
     root.addEventListener("animationend", () => root.classList.remove("bump"));
     return { root, parts: p };
   }
 
-  function updateCard(card, idea, index, orderIds, ws) {
-    const p = card.parts;
+  function updateTile(tile, idea, orderIds, d) {
+    const p = tile.parts;
     const r = idea.results;
     const position = orderIds.indexOf(idea.id);
 
-    p.rank.textContent = state.sort === "rank" ? r.rank : position + 1;
-    p.rank.title = state.sort === "rank" ? `Місце в рейтингу: ${r.rank}` : `Порядок: ${position + 1}`;
-    card.root.classList.toggle("top", state.sort === "rank" && r.rank === 1 && r.total > 0);
+    renderRank(p.rank, r);
+    tile.root.classList.remove("medal-1", "medal-2", "medal-3");
+    const medal = medalClass(r);
+    if (medal) tile.root.classList.add(medal);
 
     p.title.textContent = idea.title;
-    p.desc.textContent = idea.description;
-    p.desc.hidden = !idea.description;
+    p.newBadge.hidden = !isNewIdea(idea, d.server_time);
     p.effects.replaceChildren(...idea.effects.map((e) => el("li", { text: e.text })));
     p.effects.hidden = idea.effects.length === 0;
+
+    setStars(p.avgStars, r.avg);
+    p.avgNum.textContent = r.votes ? fmt(r.avg) : "—";
+    p.total.textContent = fmt(r.total);
+    p.totalUnit.textContent = ` ${plural(r.total, FORMS.points)}`;
+    p.votes.textContent = `${r.votes} ${plural(r.votes, FORMS.votes)}`;
+    renderHist(p.hist, r, d.workshop.show_names, false);
 
     const canMove = state.sort === "order";
     p.up.hidden = !canMove;
@@ -229,39 +251,113 @@
     p.up.disabled = position === 0;
     p.down.disabled = position === orderIds.length - 1;
 
-    p.total.textContent = fmt(r.total);
-    p.unit.textContent = plural(r.total, FORMS.points);
-    p.meta.replaceChildren(
-      el("b", { text: r.votes }), ` ${plural(r.votes, FORMS.votes)}`,
-      r.votes ? " · середній " : "", r.votes ? el("b", { text: fmt(r.avg) }) : ""
-    );
-    segBar(p.bar, r.dist, { tall: true });
-    renderVoters(p.voters, r, ws.show_names);
-
     const previous = state.totals.get(idea.id);
     if (previous !== undefined && previous !== r.total) {
-      card.root.classList.remove("bump");
-      void card.root.offsetWidth; // перезапуск анімації
-      card.root.classList.add("bump");
+      tile.root.classList.remove("bump");
+      void tile.root.offsetWidth; // перезапуск анімації
+      tile.root.classList.add("bump");
     }
     state.totals.set(idea.id, r.total);
   }
 
-  /** Текстова деталізація: хто як голосував (або лише кількість, якщо імена вимкнено). */
-  function renderVoters(container, r, showNames) {
-    const rows = [];
-    for (const score of SCORES_DESC) {
-      const count = r.dist[score];
-      if (!count) continue;
-      const s = SCALE.find((x) => x.score === score);
-      const head = el("span", { class: "vr-head" }, el("span", { class: `sw s${score}` }), `${score} · ${s.short} — ${count}`);
-      const names = showNames
-        ? r.voters[score].map((v) => `${v.company} (${v.name})`).join(", ")
-        : "";
-      rows.push(el("div", { class: "voter-row", title: s.label }, head, el("span", { class: "vr-names", text: names })));
+  function renderRank(node, r) {
+    node.textContent = r.votes ? r.rank : "–";
+    node.title = r.votes ? `Місце в рейтингу: ${r.rank}` : "Ще немає оцінок";
+  }
+
+  /**
+   * Гістограма оцінок у стилі «★★★★★ Пілот — 6»: заливка рядка = частка голосів,
+   * далі — хто так проголосував. full: усі імена з переносом (spotlight), інакше один рядок з «…».
+   */
+  function renderHist(container, r, showNames, full) {
+    if (!container.dataset.ready) {
+      for (const score of SCORES_DESC) {
+        const s = scaleOf(score);
+        const row = el(
+          "div",
+          { class: `hist-row s${score}`, dataset: { score } },
+          el("span", { class: "hist-fill" }),
+          score ? stars(score, "sm") : el("span", { class: "stars-none", text: "0" }),
+          el("span", { class: "hist-label", text: s.short }),
+          el("b", { class: "hist-count" }),
+          el("span", { class: "hist-names" })
+        );
+        container.append(row);
+      }
+      container.dataset.ready = "1";
     }
-    container.replaceChildren(...rows);
-    container.hidden = rows.length === 0;
+    for (const row of container.children) {
+      const score = Number(row.dataset.score);
+      const count = r.dist[score] || 0;
+      const share = r.votes ? count / r.votes : 0;
+      row.querySelector(".hist-fill").style.width = `${share * 100}%`;
+      row.querySelector(".hist-count").textContent = count;
+      row.classList.toggle("is-zero", count === 0);
+      const names = showNames && count ? r.voters[score].map((v) => `${v.company} (${v.name})`).join(", ") : "";
+      const namesNode = row.querySelector(".hist-names");
+      namesNode.textContent = names;
+      row.title = `${scaleOf(score).label}: ${count} ${plural(count, FORMS.votes)} (${Math.round(share * 100)}%)${names ? `\n${names}` : ""}`;
+    }
+    container.classList.toggle("full", !!full);
+  }
+
+  // ------------------------------------------------------------------ spotlight (ідея на весь екран)
+
+  function spotlightOrder() {
+    return state.data ? sortedIdeas(state.data).map((i) => i.id) : [];
+  }
+
+  function openSpotlight(id) {
+    state.spotlightId = id;
+    $("spotlight").hidden = false;
+    renderSpotlight();
+  }
+
+  function closeSpotlight() {
+    state.spotlightId = null;
+    $("spotlight").hidden = true;
+  }
+
+  function stepSpotlight(delta) {
+    const ids = spotlightOrder();
+    if (!ids.length) return;
+    const index = ids.indexOf(state.spotlightId);
+    state.spotlightId = ids[(index + delta + ids.length) % ids.length];
+    renderSpotlight();
+  }
+
+  function renderSpotlight() {
+    if (state.spotlightId === null || !state.data) return;
+    const idea = findIdea(state.spotlightId);
+    if (!idea) {
+      closeSpotlight();
+      return;
+    }
+    const r = idea.results;
+    const ids = spotlightOrder();
+    const sp = $("spotlight");
+    sp.classList.remove("medal-1", "medal-2", "medal-3");
+    const medal = medalClass(r);
+    if (medal) sp.classList.add(medal);
+    renderRank($("sp-rank"), r);
+    $("sp-title").textContent = idea.title;
+    $("sp-new").hidden = !isNewIdea(idea, state.data.server_time);
+    $("sp-counter").textContent = `${ids.indexOf(idea.id) + 1} / ${ids.length}`;
+    $("sp-desc").textContent = idea.description;
+    $("sp-desc").hidden = !idea.description;
+    $("sp-effects").replaceChildren(...idea.effects.map((e) => el("li", { text: e.text })));
+    $("sp-effects-title").hidden = idea.effects.length === 0;
+
+    $("sp-score").replaceChildren(
+      el("div", { class: "sp-avg" }, stars(r.avg, "xl"), el("b", { text: r.votes ? fmt(r.avg) : "—" })),
+      el(
+        "div",
+        { class: "sp-total" },
+        el("span", null, el("b", { text: fmt(r.total) }), ` ${plural(r.total, FORMS.points)}`),
+        el("span", { text: `${r.votes} ${plural(r.votes, FORMS.votes)} · середня оцінка` })
+      )
+    );
+    renderHist($("sp-hist"), r, state.data.workshop.show_names, true);
   }
 
   // ------------------------------------------------------------------ дії з ідеями
@@ -345,7 +441,7 @@
       if (id) await call("PUT", `/api/admin/ideas/${id}`, payload);
       else await call("POST", "/api/admin/ideas", payload);
       $("idea-modal").close();
-      toast(id ? "Ідею оновлено" : "Ідею додано");
+      toast(id ? "Ідею оновлено" : "Ідею додано — вона зверху списку");
     } catch (err) {
       $("idea-error").textContent = err.message;
       $("idea-error").hidden = false;
@@ -395,11 +491,9 @@
     try {
       await call("PUT", "/api/admin/workshop", patch);
       if (successMessage) toast(successMessage);
-      return true;
     } catch (err) {
       toast(err.message, "error");
       if (state.data) render();
-      return false;
     }
   }
 
@@ -453,27 +547,28 @@
     }
   });
 
-  // ------------------------------------------------------------------ режими екрана
+  // ------------------------------------------------------------------ компонування та режими
+
+  /** Висота шапки → CSS-змінна, щоб рівно 2 ряди плиток (6 ідей) займали решту екрана. */
+  function syncLayout() {
+    const head = $("stage-head");
+    document.documentElement.style.setProperty("--head-h", `${Math.ceil(head.getBoundingClientRect().height)}px`);
+  }
+  if (window.ResizeObserver) new ResizeObserver(syncLayout).observe($("stage-head"));
+  window.addEventListener("resize", syncLayout);
 
   function applyModes() {
     document.body.classList.toggle("present-mode", state.present);
     document.body.classList.toggle("admin-mode", !state.present);
-    document.body.classList.toggle("compact", state.compact);
     $("present-exit").hidden = !state.present;
-    $("btn-compact").setAttribute("aria-pressed", String(state.compact));
-    $("btn-compact").textContent = state.compact ? "Детально" : "Компактно";
     document.querySelectorAll("[data-sort]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sort === state.sort)));
+    syncLayout();
   }
 
   function togglePresent() {
     state.present = !state.present;
     store.set("ws-present", state.present ? "1" : "0");
     applyModes();
-    refitSoon();
-  }
-
-  function refitSoon() {
-    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
   }
 
   function toggleFullscreen() {
@@ -496,7 +591,7 @@
   document.querySelectorAll("[data-sort]").forEach((button) => {
     button.addEventListener("click", () => {
       state.sort = button.dataset.sort;
-      store.set("ws-sort", state.sort);
+      store.set("ws-sort-v2", state.sort);
       applyModes();
       if (state.data) render();
     });
@@ -505,12 +600,6 @@
   $("btn-voting").addEventListener("click", () => {
     const open = !state.data.workshop.voting_open;
     updateWorkshop({ voting_open: open }, open ? "Голосування відкрито" : "Голосування закрито");
-  });
-  $("btn-compact").addEventListener("click", () => {
-    state.compact = !state.compact;
-    store.set("ws-compact", state.compact ? "1" : "0");
-    applyModes();
-    refitSoon();
   });
   $("btn-settings").addEventListener("click", openSettings);
   $("ws-title").addEventListener("click", () => { if (!state.present && state.data) openSettings(); });
@@ -521,19 +610,26 @@
   $("present-exit").addEventListener("click", togglePresent);
   $("qr-open").addEventListener("click", () => showQr(true));
   $("qr-overlay").addEventListener("click", () => showQr(false));
+  $("sp-close").addEventListener("click", closeSpotlight);
+  $("sp-prev").addEventListener("click", () => stepSpotlight(-1));
+  $("sp-next").addEventListener("click", () => stepSpotlight(1));
 
   document.querySelectorAll("dialog [data-close]").forEach((button) => {
     button.addEventListener("click", () => button.closest("dialog").close());
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !$("qr-overlay").hidden) {
-      showQr(false);
-      return;
+    if (event.key === "Escape") {
+      if (!$("qr-overlay").hidden) return showQr(false);
+      if (state.spotlightId !== null) return closeSpotlight();
     }
     const target = event.target;
     const typing = target.closest && target.closest("input, textarea, select, dialog");
     if (typing || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (state.spotlightId !== null && (event.key === "ArrowRight" || event.key === "ArrowLeft")) {
+      event.preventDefault();
+      return stepSpotlight(event.key === "ArrowRight" ? 1 : -1);
+    }
     const key = event.key.toLowerCase();
     if (key === "p" || key === "з") togglePresent();
     else if (key === "f" || key === "а") toggleFullscreen();

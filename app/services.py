@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from datetime import datetime, timezone
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
@@ -290,8 +291,10 @@ def _set_effects(idea: Idea, effects: list[str]) -> None:
 
 def create_idea(data: dict) -> Idea:
     title, description, effects = _parse_idea(data)
-    max_position = db.session.scalar(select(func.max(Idea.position)))
-    idea = Idea(title=title, description=description, position=(max_position or 0) + 1)
+    # Нові ідеї з'являються зверху списку (і в учасників, і на екрані ведучого).
+    min_position = db.session.scalar(select(func.min(Idea.position)))
+    position = 1 if min_position is None else min_position - 1
+    idea = Idea(title=title, description=description, position=position)
     db.session.add(idea)
     _set_effects(idea, effects)
     db.session.flush()
@@ -399,9 +402,17 @@ def compute_results(ideas: list[Idea], with_voters: bool) -> dict[int, dict]:
 def list_ideas() -> list[Idea]:
     return list(
         db.session.scalars(
-            select(Idea).options(selectinload(Idea.effects)).order_by(Idea.position, Idea.id)
+            select(Idea).options(selectinload(Idea.effects)).order_by(Idea.position, Idea.id.desc())
         ).all()
     )
+
+
+def _iso(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:  # SQLite повертає naive datetime (у UTC)
+        value = value.replace(tzinfo=timezone.utc)
+    return value.isoformat()
 
 
 def idea_to_dict(idea: Idea) -> dict:
@@ -410,6 +421,7 @@ def idea_to_dict(idea: Idea) -> dict:
         "title": idea.title,
         "description": idea.description,
         "position": idea.position,
+        "created_at": _iso(idea.created_at),
         "effects": [{"id": e.id, "text": e.text} for e in idea.effects],
     }
 
@@ -426,6 +438,7 @@ def build_state(participant: Participant | None = None, admin: bool = False) -> 
 
     state: dict = {
         "version": version,
+        "server_time": _iso(datetime.now(timezone.utc)),
         "workshop": {
             "title": workshop.title,
             "description": workshop.description,
@@ -467,7 +480,7 @@ def build_state(participant: Participant | None = None, admin: bool = False) -> 
                 "name": p.name,
                 "company": p.company,
                 "votes_count": int(counts.get(p.id, 0)),
-                "created_at": p.created_at.isoformat() if p.created_at else None,
+                "created_at": _iso(p.created_at),
             }
             for p in participants
         ]

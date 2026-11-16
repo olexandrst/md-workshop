@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from sqlalchemy import func, select
 
 from .extensions import db
-from .models import BusinessEffect, Idea
+from .models import BusinessEffect, Idea, utcnow
 
 DEMO_IDEAS: list[dict] = [
     {
@@ -108,9 +110,17 @@ DEMO_IDEAS: list[dict] = [
 
 
 def seed_demo_ideas() -> int:
-    start = (db.session.scalar(select(func.max(Idea.position))) or 0) + 1
+    # Демо-ідеї стають зверху, зберігаючи порядок списку.
+    current_min = db.session.scalar(select(func.min(Idea.position)))
+    start = 1 if current_min is None else current_min - len(DEMO_IDEAS)
     for offset, data in enumerate(DEMO_IDEAS):
-        idea = Idea(title=data["title"], description=data["description"], position=start + offset)
+        idea = Idea(
+            title=data["title"],
+            description=data["description"],
+            position=start + offset,
+            # Демо-ідеї не позначаються бейджем «Нова» — він для ідей, доданих ведучим під час воркшопу.
+            created_at=utcnow() - timedelta(days=1),
+        )
         for position, text in enumerate(data["effects"]):
             idea.effects.append(BusinessEffect(text=text, position=position))
         db.session.add(idea)

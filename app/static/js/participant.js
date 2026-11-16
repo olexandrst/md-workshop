@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const { api, el, plural, fmt, FORMS, SCALE, scaleItem, segBar, toast, poller } = window.WS;
+  const { api, el, plural, fmt, FORMS, SCALE, scaleItem, segBar, toast, poller, stars, setStars, isNewIdea } = window.WS;
   const $ = (id) => document.getElementById(id);
   const POLL_MS = 3000;
 
@@ -116,6 +116,7 @@
   function createCard(ideaId) {
     const parts = {};
     parts.title = el("h2");
+    parts.newBadge = el("span", { class: "new-badge", text: "Нова" });
     parts.desc = el("p", { class: "idea-desc pre-line clamped" });
     parts.more = el("button", { class: "more-btn", type: "button", text: "Детальніше" });
     parts.more.addEventListener("click", () => {
@@ -144,7 +145,9 @@
     });
     parts.caption = el("p", { class: "score-caption" });
     parts.resTotal = el("span");
-    parts.resAvg = el("span");
+    parts.avgStars = stars(0, "sm");
+    parts.avgNum = el("b");
+    parts.resAvg = el("span", { class: "res-avg" }, parts.avgStars, parts.avgNum);
     parts.bar = el("div");
     parts.results = el(
       "div",
@@ -155,7 +158,7 @@
     const root = el(
       "article",
       { class: "card idea-card", dataset: { id: ideaId } },
-      parts.title, parts.desc, parts.more, parts.effects, parts.row, parts.caption, parts.results
+      el("div", { class: "idea-head" }, parts.title, parts.newBadge), parts.desc, parts.more, parts.effects, parts.row, parts.caption, parts.results
     );
     return { root, parts };
   }
@@ -163,6 +166,7 @@
   function updateCard(card, idea, workshop) {
     const p = card.parts;
     p.title.textContent = idea.title;
+    p.newBadge.hidden = !isNewIdea(idea, state.data.server_time);
     p.desc.textContent = idea.description;
     p.desc.hidden = !idea.description;
     const long = idea.description.length > 170 || idea.description.split("\n").length > 3;
@@ -191,7 +195,9 @@
       p.resTotal.replaceChildren(
         el("b", { text: fmt(r.total) }), ` ${plural(r.total, FORMS.points)} · ${r.votes} ${plural(r.votes, FORMS.votes)}`
       );
-      p.resAvg.replaceChildren(r.votes ? "середній " : "", r.votes ? el("b", { text: fmt(r.avg) }) : "");
+      p.resAvg.hidden = !r.votes;
+      setStars(p.avgStars, r.avg);
+      p.avgNum.textContent = fmt(r.avg);
       segBar(p.bar, r.dist, { tall: false });
     }
   }

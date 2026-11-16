@@ -10,56 +10,95 @@
 {% endblock %}
 {% block body_class %}pr-body admin-mode{% endblock %}
 {% block body %}
-<div class="pr-shell" id="shell">
-  <header class="pr-header">
-    <div class="pr-titles">
-      <h1 id="ws-title" class="editable" title="Натисніть, щоб змінити назву та пояснення">{{ workshop.title }}</h1>
-      <p id="ws-desc" class="pr-desc pre-line editable" title="Натисніть, щоб змінити назву та пояснення">{{ workshop.description }}</p>
-      <div class="pr-stats">
-        <span id="voting-pill" class="pill open">Голосування відкрите</span>
-        <span class="stat"><b id="stat-participants">0</b><span id="stat-participants-label">учасників</span></span>
-        <span class="stat"><b id="stat-votes">0</b><span id="stat-votes-label">оцінок</span></span>
+<div class="stage" id="stage">
+  <header class="stage-head" id="stage-head">
+    <div class="sh-main">
+      <h1 id="ws-title" class="sh-title editable" title="Натисніть, щоб змінити назву та пояснення">{{ workshop.title }}</h1>
+      <div class="sh-row">
+        <p id="ws-desc" class="sh-desc editable" title="Натисніть, щоб змінити назву та пояснення">{{ workshop.description }}</p>
+        <div class="stars-legend" id="legend" aria-label="Шкала оцінок"></div>
+      </div>
+      <div class="sh-row">
+        <div class="sh-stats">
+          <span id="voting-pill" class="pill open">Голосування відкрите</span>
+          <span class="stat"><b id="stat-participants">0</b> <span id="stat-participants-label">учасників</span></span>
+          <span class="stat"><b id="stat-votes">0</b> <span id="stat-votes-label">оцінок</span></span>
+          <span class="url-warning" id="url-warning" hidden
+                title="Відкрийте цей екран за IP-адресою комп'ютера в локальній мережі або задайте змінну PUBLIC_URL">
+            ⚠ QR веде на localhost — телефони його не відкриють
+          </span>
+        </div>
+        <div class="sh-tools admin-only" role="toolbar" aria-label="Керування">
+          <div class="seg-toggle" role="group" aria-label="Сортування ідей">
+            <button type="button" data-sort="order" aria-pressed="true" title="Нові ідеї зверху">За порядком</button>
+            <button type="button" data-sort="rank" aria-pressed="false" title="Сума балів, далі середній бал">За рейтингом</button>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btn-add" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Ідея
+          </button>
+          <button class="btn btn-sm" id="btn-voting" type="button">Закрити голосування</button>
+          <button class="icon-btn" id="btn-settings" type="button" title="Налаштування" aria-label="Налаштування">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+          </button>
+          <a class="icon-btn" href="{{ url_for('admin.export_xlsx') }}" title="Експорт в Excel" aria-label="Експорт в Excel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+          </a>
+          <button class="icon-btn" id="btn-theme" type="button" title="Світла / темна тема" aria-label="Світла / темна тема">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          </button>
+          <button class="icon-btn" id="btn-fullscreen" type="button" title="На весь екран (F)" aria-label="На весь екран">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+          </button>
+          <button class="btn btn-sm" id="btn-present" type="button" title="Сховати кнопки керування (P)">Презентація</button>
+        </div>
       </div>
     </div>
     <button class="qr-card" id="qr-open" type="button" title="Показати QR-код на весь екран (Q)">
+      <span class="qr-text">
+        <span class="qr-caption">Голосуйте з телефона</span>
+        <span class="qr-hint">Наведіть камеру на QR-код</span>
+        <span class="qr-url" id="qr-url"></span>
+      </span>
       <img src="{{ url_for('public.qr_code') }}" alt="QR-код сторінки голосування" width="200" height="200">
-      <span class="qr-caption">Скануйте, щоб голосувати</span>
-      <span class="qr-url" id="qr-url"></span>
     </button>
   </header>
 
-  <div class="pr-toolbar admin-only">
-    <div class="seg-toggle" role="group" aria-label="Сортування ідей">
-      <button type="button" data-sort="rank" aria-pressed="true">За рейтингом</button>
-      <button type="button" data-sort="order" aria-pressed="false">За порядком</button>
-    </div>
-    <button class="btn btn-primary btn-sm" id="btn-add" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      Нова ідея
-    </button>
-    <button class="btn btn-sm" id="btn-voting" type="button">Закрити голосування</button>
-    <span class="spacer"></span>
-    <button class="btn btn-sm btn-ghost" id="btn-compact" type="button" aria-pressed="false">Компактно</button>
-    <button class="btn btn-sm btn-ghost" id="btn-settings" type="button">Налаштування</button>
-    <a class="btn btn-sm btn-ghost" href="{{ url_for('admin.export_xlsx') }}">Експорт Excel</a>
-    <button class="btn btn-sm btn-ghost" id="btn-theme" type="button" title="Світла / темна тема">Тема</button>
-    <button class="btn btn-sm btn-ghost" id="btn-fullscreen" type="button" title="На весь екран (F)">На весь екран</button>
-    <button class="btn btn-sm" id="btn-present" type="button" title="Сховати кнопки керування (P)">Режим презентації</button>
-    <div class="url-warning" id="url-warning" hidden>
-      QR-код веде на localhost — телефони учасників його не відкриють. Відкрийте цей екран за IP-адресою комп'ютера
-      в локальній мережі або задайте змінну PUBLIC_URL.
-    </div>
-  </div>
-
-  <div class="pr-legend-row">
-    <div class="legend" id="legend" aria-label="Шкала оцінок"></div>
-    <div class="muted" id="sort-note"></div>
-  </div>
-
-  <main id="ideas" class="pr-ideas" aria-live="off"></main>
+  <main id="ideas" class="tiles" aria-live="off"></main>
 </div>
 
 <button class="btn btn-sm present-exit" id="present-exit" type="button" hidden>Показати керування (P)</button>
+
+<div class="spotlight" id="spotlight" hidden role="dialog" aria-modal="true" aria-labelledby="sp-title">
+  <div class="sp-top">
+    <div class="rank-badge sp-rank" id="sp-rank"></div>
+    <h2 class="sp-title" id="sp-title"></h2>
+    <span class="new-badge" id="sp-new" hidden>Нова</span>
+    <div class="sp-nav">
+      <button class="icon-btn" type="button" id="sp-prev" title="Попередня (←)" aria-label="Попередня ідея">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span class="sp-counter" id="sp-counter"></span>
+      <button class="icon-btn" type="button" id="sp-next" title="Наступна (→)" aria-label="Наступна ідея">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="icon-btn" type="button" id="sp-close" title="Закрити (Esc)" aria-label="Закрити">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="sp-body">
+    <div class="sp-info">
+      <p class="sp-desc pre-line" id="sp-desc"></p>
+      <h3 class="sp-subtitle" id="sp-effects-title">Бізнес-ефекти</h3>
+      <ul class="effects sp-effects" id="sp-effects"></ul>
+    </div>
+    <div class="sp-results">
+      <div class="sp-score" id="sp-score"></div>
+      <div class="hist sp-hist" id="sp-hist"></div>
+    </div>
+  </div>
+</div>
 
 <div class="qr-overlay" id="qr-overlay" hidden role="dialog" aria-label="QR-код для голосування">
   <h2>Скануйте камерою телефону</h2>
@@ -129,7 +168,7 @@
         <input type="checkbox" data-setting="voting_open"><span class="track"></span>
       </label>
       <label class="switch">
-        <span class="switch-text"><b>Результати на телефонах учасників</b><small>Сума балів і розподіл оцінок під кожною ідеєю</small></span>
+        <span class="switch-text"><b>Результати на телефонах учасників</b><small>Бали, середня оцінка і розподіл під кожною ідеєю</small></span>
         <input type="checkbox" data-setting="show_results"><span class="track"></span>
       </label>
       <label class="switch">

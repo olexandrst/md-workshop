@@ -201,5 +201,42 @@
     };
   }
 
-  window.WS = { boot, SCALE, api, ApiError, el, plural, fmt, FORMS, scaleItem, segBar, toast, poller };
+  // ------------------------------------------------------------------ зірочки
+
+  const STAR_PATH = "M12 2.6l2.93 5.94 6.56.95-4.75 4.63 1.12 6.53L12 17.57l-5.86 3.08 1.12-6.53L2.51 9.49l6.56-.95z";
+  const STAR_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${STAR_PATH}"/></svg>`;
+  const FIVE_STARS = STAR_SVG.repeat(5);
+
+  /**
+   * Рейтинг зірочками 0–5 з частковим заповненням (середній бал 3,67 → 3⅔ зірки).
+   * Кожна зірка має власні поля у viewBox, тож відсоток ширини точно відповідає значенню.
+   */
+  function stars(value, className) {
+    const node = el("span", { class: `stars ${className || ""}`, role: "img" });
+    node.innerHTML = `<span class="stars-bg">${FIVE_STARS}</span><span class="stars-fg">${FIVE_STARS}</span>`;
+    setStars(node, value);
+    return node;
+  }
+
+  function setStars(node, value) {
+    const v = Math.max(0, Math.min(5, Number(value) || 0));
+    node.style.setProperty("--fill", `${(v / 5) * 100}%`);
+    node.setAttribute("aria-label", `${fmt(v)} з 5`);
+  }
+
+  // ------------------------------------------------------------------ «Нова» ідея
+
+  const NEW_IDEA_MS = 10 * 60 * 1000;
+
+  /** Ідея додана менше ніж 10 хв тому (за годинником сервера, щоб не залежати від годинника телефона). */
+  function isNewIdea(idea, serverTime) {
+    if (!idea.created_at || !serverTime) return false;
+    const age = Date.parse(serverTime) - Date.parse(idea.created_at);
+    return age >= 0 && age < NEW_IDEA_MS;
+  }
+
+  window.WS = {
+    boot, SCALE, api, ApiError, el, plural, fmt, FORMS, scaleItem, segBar, toast, poller,
+    stars, setStars, isNewIdea,
+  };
 })();
