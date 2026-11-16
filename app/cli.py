@@ -20,6 +20,10 @@ def _upgrade_schema() -> None:
     if "kind" not in columns:
         with db.engine.begin() as conn:
             conn.execute(text("ALTER TABLE business_effect ADD COLUMN kind VARCHAR(32)"))
+    participant_columns = {c["name"] for c in inspect(db.engine).get_columns("participant")}
+    if "phone" not in participant_columns:
+        with db.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE participant ADD COLUMN phone VARCHAR(32) NOT NULL DEFAULT ''"))
 
 
 def _init_schema(seed_demo: bool) -> bool:

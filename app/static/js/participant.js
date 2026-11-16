@@ -65,13 +65,14 @@
     $("join").hidden = false;
     $("join-title").textContent = editing ? "Змінити дані" : "Представтеся, будь ласка";
     $("join-lead").textContent = editing
-      ? "Виправте ім'я або назву компанії. Ваші оцінки збережуться."
-      : "Вкажіть ім'я та компанію — і можна голосувати за ідеї. Реєстрація не потрібна.";
+      ? "Виправте ім'я, телефон або назву компанії. Ваші оцінки збережуться."
+      : "Вкажіть ім'я, телефон і компанію — і можна голосувати за ідеї. Реєстрація не потрібна.";
     $("join-submit").textContent = editing ? "Зберегти" : "Почати голосування";
     $("edit-extra").hidden = !editing;
     if (!$("join-form").dataset.filled) {
       $("join-name").value = editing ? me.name : store.get("ws-name");
       $("join-company").value = editing ? me.company : store.get("ws-company");
+      $("join-phone").value = editing ? (me.phone || "") : store.get("ws-phone");
       $("join-form").dataset.filled = "1";
     }
   }
@@ -245,9 +246,10 @@
     event.preventDefault();
     const name = $("join-name").value.trim();
     const company = $("join-company").value.trim();
+    const phone = $("join-phone").value.trim();
     const errorBox = $("join-error");
-    if (!name || !company) {
-      errorBox.textContent = "Вкажіть, будь ласка, ім'я та компанію";
+    if (!name || !company || !phone) {
+      errorBox.textContent = "Заповніть, будь ласка, ім'я та прізвище, телефон і назву компанії";
       errorBox.hidden = false;
       return;
     }
@@ -256,9 +258,10 @@
     submit.disabled = true;
     try {
       const editing = state.editing && state.data && state.data.me;
-      const data = await api(editing ? "PUT" : "POST", editing ? "/api/me" : "/api/join", { name, company });
+      const data = await api(editing ? "PUT" : "POST", editing ? "/api/me" : "/api/join", { name, company, phone });
       store.set("ws-name", name);
       store.set("ws-company", company);
+      store.set("ws-phone", phone);
       state.editing = false;
       delete $("join-form").dataset.filled;
       apply(data);
@@ -291,6 +294,7 @@
       state.editing = false;
       store.set("ws-name", "");
       store.set("ws-company", "");
+      store.set("ws-phone", "");
       delete $("join-form").dataset.filled;
       cards.forEach((c) => c.root.remove());
       cards.clear();

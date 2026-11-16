@@ -69,6 +69,33 @@ def create_app(overrides: dict | None = None) -> Flask:
             "brand_tagline": app.config["BRAND_TAGLINE"],
         }
 
+    from datetime import datetime, timezone
+    from zoneinfo import ZoneInfo
+
+    local_tz = ZoneInfo(app.config.get("TIMEZONE", "Europe/Kyiv"))
+
+    @app.template_filter("local_dt")
+    def _local_dt(value, fmt="%d.%m.%Y %H:%M"):
+        if not value:
+            return ""
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(local_tz).strftime(fmt)
+
+    @app.template_filter("phone")
+    def _phone(value):
+        """+380671234567 → +380 67 123 45 67 (інші формати — як є)."""
+        if not value:
+            return ""
+        if value.startswith("+380") and len(value) == 13:
+            d = value[4:]
+            return f"+380 {d[:2]} {d[2:5]} {d[5:7]} {d[7:]}"
+        if value.startswith("0") and len(value) == 10:
+            return f"{value[:3]} {value[3:6]} {value[6:8]} {value[8:]}"
+        return value
+
     @app.errorhandler(ServiceError)
     def _service_error(err: ServiceError):
         db.session.rollback()

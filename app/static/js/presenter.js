@@ -79,7 +79,7 @@
     const pill = $("voting-pill");
     pill.textContent = ws.voting_open ? "Голосування відкрите" : "Голосування закрите";
     pill.className = `pill ${ws.voting_open ? "open" : "closed"}`;
-    $("btn-voting").textContent = ws.voting_open ? "Закрити голосування" : "Відкрити голосування";
+    $("btn-voting").textContent = ws.voting_open ? "Завершити голосування" : "Відкрити голосування";
 
     const totalVotes = d.ideas.reduce((sum, i) => sum + i.results.votes, 0);
     $("stat-participants").textContent = d.participants_count;
@@ -547,6 +547,12 @@
     syncEffectChips();
   });
 
+  function formatPhone(value) {
+    if (/^\+380\d{9}$/.test(value)) return value.replace(/^\+380(\d{2})(\d{3})(\d{2})(\d{2})$/, "+380 $1 $2 $3 $4");
+    if (/^0\d{9}$/.test(value)) return value.replace(/^(\d{3})(\d{3})(\d{2})(\d{2})$/, "$1 $2 $3 $4");
+    return value;
+  }
+
   // ------------------------------------------------------------------ налаштування
 
   function openSettings() {
@@ -570,11 +576,12 @@
         null,
         el("td", { text: p.company }),
         el("td", { text: p.name }),
+        el("td", null, p.phone ? el("a", { href: `tel:${p.phone}`, text: formatPhone(p.phone) }) : "—"),
         el("td", { class: "num", text: p.votes_count }),
         el("td", { class: "num" }, iconButton("trash", "Видалити учасника", () => deleteParticipant(p), "danger"))
       )
     );
-    if (!rows.length) rows.push(el("tr", null, el("td", { colspan: "4", class: "muted", text: "Поки нікого немає" })));
+    if (!rows.length) rows.push(el("tr", null, el("td", { colspan: "5", class: "muted", text: "Поки нікого немає" })));
     $("participants-body").replaceChildren(...rows);
   }
 
@@ -688,9 +695,25 @@
     });
   });
   $("btn-add").addEventListener("click", () => openIdeaModal(null));
-  $("btn-voting").addEventListener("click", () => {
-    const open = !state.data.workshop.voting_open;
-    updateWorkshop({ voting_open: open }, open ? "Голосування відкрито" : "Голосування закрито");
+  $("btn-voting").addEventListener("click", async () => {
+    if (!state.data.workshop.voting_open) {
+      updateWorkshop({ voting_open: true }, "Голосування відкрито");
+      return;
+    }
+    const ok = window.confirm(
+      "Завершити голосування?\n\nГолосування буде закрито, а результати разом з контактами учасників " +
+      "збережуться в «Історії». Відкрити голосування знову можна будь-коли."
+    );
+    if (!ok) return;
+    try {
+      const data = await call("POST", "/api/admin/finish");
+      toast("Голосування завершено, результати збережено в історії");
+      if (data && data.snapshot_id && window.confirm("Результати збережено. Відкрити їх в історії?")) {
+        window.location.href = `/admin/history/${data.snapshot_id}`;
+      }
+    } catch (err) {
+      toast(err.message, "error");
+    }
   });
   $("btn-settings").addEventListener("click", openSettings);
   $("ws-title").addEventListener("click", () => { if (!state.present && state.data) openSettings(); });

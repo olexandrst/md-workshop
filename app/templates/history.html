@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Історія голосувань · {{ workshop.title }}{% endblock %}
+{% block body_class %}pr-body{% endblock %}
+{% block body %}
+<div class="hp-wrap">
+  <header class="hp-head card">
+    <a class="btn btn-sm" href="{{ url_for('admin.presenter') }}">← До екрана</a>
+    <div class="hp-head-main">
+      <h1>Історія <span class="accent-text">голосувань</span></h1>
+      <p class="muted">Кожне натискання «Завершити голосування» зберігає тут повний знімок результатів і контакти учасників.</p>
+    </div>
+  </header>
+
+  {% with messages = get_flashed_messages() %}
+    {% for message in messages %}<div class="hp-flash">{{ message }}</div>{% endfor %}
+  {% endwith %}
+
+  {% if snapshots %}
+    <div class="hp-list">
+      {% for s in snapshots %}
+        <article class="card hp-item">
+          <div class="hp-item-main">
+            <div class="hp-date">{{ s.created_at|local_dt }}</div>
+            <h2><a href="{{ url_for('admin.history_detail', snapshot_id=s.id) }}">{{ s.title }}</a></h2>
+            <div class="hp-stats">
+              <span><b>{{ s.participants_count }}</b> учасн.</span>
+              <span><b>{{ s.votes_count }}</b> оцінок</span>
+              <span><b>{{ s.ideas_count }}</b> ідей</span>
+            </div>
+          </div>
+          <div class="hp-actions">
+            <a class="btn btn-primary btn-sm" href="{{ url_for('admin.history_detail', snapshot_id=s.id) }}">Переглянути</a>
+            <a class="btn btn-sm" href="{{ url_for('admin.history_export', snapshot_id=s.id) }}">Excel</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card hp-empty">
+      Ще немає завершених голосувань. Натисніть «Завершити голосування» на екрані ведучого — результати збережуться тут.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

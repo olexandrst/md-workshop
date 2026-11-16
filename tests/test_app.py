@@ -65,7 +65,7 @@ def test_participant_page_renders(client):
 
 
 def test_join_and_rejoin_same_identity(app, client):
-    response = client.post("/api/join", json={"name": "  Олена ", "company": "Меблі  Плюс"})
+    response = client.post("/api/join", json={"name": "  Олена ", "company": "Меблі  Плюс", "phone": "0671234567"})
     state = response.get_json()
     assert response.status_code == 200
     assert state["me"]["name"] == "Олена"
@@ -75,16 +75,16 @@ def test_join_and_rejoin_same_identity(app, client):
     from tests.conftest import api_client
 
     other_device = api_client(app)
-    state2 = other_device.post("/api/join", json={"name": "олена", "company": "МЕБЛІ ПЛЮС"}).get_json()
+    state2 = other_device.post("/api/join", json={"name": "олена", "company": "МЕБЛІ ПЛЮС", "phone": "0671234567"}).get_json()
     assert state2["me"]["id"] == first_id
     assert state2["participants_count"] == 1
 
 
 def test_join_validation(client):
-    response = client.post("/api/join", json={"name": "", "company": "X"})
+    response = client.post("/api/join", json={"name": "", "company": "X", "phone": "0671234567"})
     assert response.status_code == 400
     assert "Ім'я" in response.get_json()["error"]
-    response = client.post("/api/join", json={"name": "A" * 81, "company": "X"})
+    response = client.post("/api/join", json={"name": "A" * 81, "company": "X", "phone": "0671234567"})
     assert response.status_code == 400
     response = client.post("/api/join", data="not json", content_type="text/plain")
     assert response.status_code == 400
@@ -93,9 +93,9 @@ def test_join_validation(client):
 def test_update_me_and_conflict(make_participant):
     alice = make_participant("Аліна", "Дерево")
     make_participant("Богдан", "Дерево")
-    state = alice.put("/api/me", json={"name": "Аліна К.", "company": "Дерево"}).get_json()
+    state = alice.put("/api/me", json={"name": "Аліна К.", "company": "Дерево", "phone": "0671234567"}).get_json()
     assert state["me"]["name"] == "Аліна К."
-    response = alice.put("/api/me", json={"name": "богдан", "company": "дерево"})
+    response = alice.put("/api/me", json={"name": "богдан", "company": "дерево", "phone": "0671234567"})
     assert response.status_code == 409
 
 
@@ -172,7 +172,7 @@ def test_aggregation_and_ranking(admin, make_idea, make_participant):
     assert ra["dist"] == {"0": 1, "1": 0, "2": 0, "3": 1, "5": 1}
     assert rb["total"] == 5 and rb["avg"] == 1.67
     assert ra["rank"] == 1 and rb["rank"] == 2
-    assert ra["voters"]["5"] == [{"name": "U0", "company": "Co0"}]
+    assert ra["voters"]["5"] == [{"name": "U0", "company": "Co0", "phone": "+380671234567"}]
 
 
 def test_participant_state_has_no_names_and_respects_show_results(admin, make_idea, make_participant):
@@ -287,7 +287,7 @@ def test_delete_participant_and_resets(app, admin, make_idea, make_participant):
 
 def test_export_xlsx(admin, make_idea, make_participant):
     idea = make_idea("Розкрій ДСП", effects=["Менше відходів"])
-    c = make_participant("Ігор", "Фабрика")
+    c = make_participant("Ігор", "Фабрика", "+38 (050) 111-22-33")
     c.post("/api/vote", json={"idea_id": idea["id"], "score": 5})
     response = admin.get("/admin/export.xlsx")
     assert response.status_code == 200
@@ -296,14 +296,14 @@ def test_export_xlsx(admin, make_idea, make_participant):
     summary = wb["Підсумок"]
     assert summary["B2"].value == "Розкрій ДСП"
     assert summary["D2"].value == 5
-    assert "Фабрика (Ігор)" in summary.cell(row=2, column=12).value
+    assert "Фабрика (Ігор, +380501112233)" in summary.cell(row=2, column=12).value
     assert wb["Голоси"]["A2"].value == "Фабрика"
 
 
 def test_mutating_api_requires_fetch_header(app, make_idea):
     idea = make_idea()
     bare = app.test_client()
-    response = bare.post("/api/join", json={"name": "A", "company": "B"})
+    response = bare.post("/api/join", json={"name": "A", "company": "B", "phone": "0671234567"})
     assert response.status_code == 403
     assert bare.get("/api/state").status_code == 200
     admin = app.test_client()
@@ -401,3 +401,79 @@ def test_duplicate_custom_effects_are_merged(admin):
         json={"title": "X", "effects": [{"kind": None, "text": "Вихід на ЄС"}, {"kind": None, "text": "вихід на єс"}]},
     )
     assert [e["text"] for e in response.get_json()["ideas"][0]["effects"]] == ["Вихід на ЄС"]
+
+
+
+# --------------------------------------------------------------------------- телефон та історія
+
+
+def test_phone_required_validated_and_private(app, client, admin, make_idea):
+    assert client.post("/api/join", json={"name": "A", "company": "B"}).status_code == 400
+    assert client.post("/api/join", json={"name": "A", "company": "B", "phone": "abc"}).status_code == 400
+    assert client.post("/api/join", json={"name": "A", "company": "B", "phone": "123"}).status_code == 400
+    state = client.post("/api/join", json={"name": "A", "company": "B", "phone": "+38 (067) 123-45-67"}).get_json()
+    assert state["me"]["phone"] == "+380671234567"
+    # повторний вхід з новим телефоном оновлює контакт
+    from tests.conftest import api_client
+
+    other = api_client(app)
+    other.post("/api/join", json={"name": "a", "company": "b", "phone": "0501112233"})
+    participants = admin.get("/api/admin/state").get_json()["participants"]
+    assert [(p["name"], p["phone"]) for p in participants] == [("A", "0501112233")]
+    # інші учасники телефонів не бачать
+    idea = make_idea()
+    other.post("/api/vote", json={"idea_id": idea["id"], "score": 5})
+    public = api_client(app).get("/api/state").get_data(as_text=True)
+    assert "0501112233" not in public
+
+
+def test_finish_voting_saves_history(admin, make_idea, make_participant):
+    idea = make_idea("Розкрій")
+    c = make_participant("Ігор Петренко", "Фабрика", "+380501112233")
+    c.post("/api/vote", json={"idea_id": idea["id"], "score": 5})
+
+    state = admin.post("/api/admin/finish").get_json()
+    assert state["workshop"]["voting_open"] is False and state["snapshot_id"]
+    sid = state["snapshot_id"]
+    assert c.post("/api/vote", json={"idea_id": idea["id"], "score": 3}).status_code == 403
+
+    page = admin.get("/admin/history").get_data(as_text=True)
+    assert f"/admin/history/{sid}" in page
+    detail = admin.get(f"/admin/history/{sid}").get_data(as_text=True)
+    assert "Ігор Петренко" in detail and "+380501112233" in detail and "Розкрій" in detail
+    xlsx = admin.get(f"/admin/history/{sid}/export.xlsx")
+    assert xlsx.status_code == 200
+    wb = load_workbook(io.BytesIO(xlsx.data))
+    assert wb["Учасники"]["C2"].value == "+380501112233"
+
+    # знімок не змінюється після нових дій
+    admin.post("/api/admin/reset-votes")
+    assert "Ігор Петренко" in admin.get(f"/admin/history/{sid}").get_data(as_text=True)
+
+    response = admin.post(f"/admin/history/{sid}/delete")
+    assert response.status_code == 302
+    assert admin.get(f"/admin/history/{sid}").status_code == 404
+
+
+def test_history_requires_admin(client):
+    assert client.get("/admin/history").status_code == 302
+    assert client.post("/api/admin/finish").status_code == 401
+
+
+def test_upgrade_adds_participant_phone_column(app):
+    from sqlalchemy import inspect, text
+
+    with app.app_context():
+        db.session.execute(text("DROP TABLE vote"))
+        db.session.execute(text("DROP TABLE participant"))
+        db.session.execute(
+            text(
+                "CREATE TABLE participant (id INTEGER PRIMARY KEY, name VARCHAR(80) NOT NULL, "
+                "company VARCHAR(120) NOT NULL, name_key VARCHAR(80) NOT NULL, company_key VARCHAR(120) NOT NULL, "
+                "created_at TIMESTAMP NOT NULL)"
+            )
+        )
+        db.session.commit()
+        init_db()
+        columns = {c["name"] for c in inspect(db.engine).get_columns("participant")}
+        assert "phone" in columns

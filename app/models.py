@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -56,6 +57,7 @@ EFFECT_MAX = 300
 EFFECTS_PER_IDEA_MAX = 15
 NAME_MAX = 80
 COMPANY_MAX = 120
+PHONE_MAX = 32
 
 
 def utcnow() -> datetime:
@@ -139,6 +141,8 @@ class Participant(db.Model):
     # Нормалізовані ключі: той самий учасник з іншого пристрою «повертається» до своїх голосів.
     name_key: Mapped[str] = mapped_column(String(NAME_MAX), nullable=False)
     company_key: Mapped[str] = mapped_column(String(COMPANY_MAX), nullable=False)
+    # Контактний телефон (бачить лише ведучий). Нормалізований: «+» і цифри.
+    phone: Mapped[str] = mapped_column(String(PHONE_MAX), nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
     votes: Mapped[list["Vote"]] = relationship(
@@ -174,3 +178,18 @@ class Vote(db.Model):
 
     participant: Mapped[Participant] = relationship(back_populates="votes")
     idea: Mapped[Idea] = relationship(back_populates="votes")
+
+
+class ResultSnapshot(db.Model):
+    """Знімок результатів завершеного голосування: ідеї, бали, хто як голосував, контакти учасників."""
+
+    __tablename__ = "result_snapshot"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(TITLE_MAX), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, index=True)
+    participants_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    votes_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    ideas_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Повний стан у форматі build_state(admin=True)
+    data: Mapped[dict] = mapped_column(JSON, nullable=False)

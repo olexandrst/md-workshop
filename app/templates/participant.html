@@ -11,17 +11,22 @@
 
   <section id="join" class="card join-card" hidden aria-labelledby="join-title">
     <h2 id="join-title">Представтеся, будь ласка</h2>
-    <p class="lead" id="join-lead">Вкажіть ім'я та компанію — і можна голосувати за ідеї. Реєстрація не потрібна.</p>
+    <p class="lead" id="join-lead">Вкажіть ім'я, телефон і компанію — і можна голосувати за ідеї. Реєстрація не потрібна.</p>
     <form id="join-form" novalidate>
       <div id="join-error" class="form-error" role="alert" hidden></div>
       <label class="field">
-        <span>Ім'я</span>
-        <input class="input" id="join-name" name="name" autocomplete="name" maxlength="80" required placeholder="Наприклад, Олена">
+        <span>Ім'я та прізвище</span>
+        <input class="input" id="join-name" name="name" autocomplete="name" maxlength="80" required placeholder="Наприклад, Олена Коваленко">
       </label>
       <label class="field">
-        <span>Компанія</span>
+        <span>Телефон</span>
+        <input class="input" id="join-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="32" required placeholder="+380 67 123 45 67">
+      </label>
+      <label class="field">
+        <span>Назва компанії</span>
         <input class="input" id="join-company" name="company" autocomplete="organization" maxlength="120" required placeholder="Назва вашої компанії">
       </label>
+      <p class="field-hint" style="margin:-4px 0 14px">Телефон бачить лише ведучий — щоб зв'язатися щодо пілоту чи концепції.</p>
       <button class="btn btn-primary btn-block" type="submit" id="join-submit">Почати голосування</button>
       <div id="edit-extra" hidden>
         <button class="btn btn-ghost btn-block" type="button" id="edit-cancel" style="margin-top:8px">Скасувати</button>

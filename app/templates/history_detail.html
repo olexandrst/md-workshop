@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ snapshot.title }} · {{ snapshot.created_at|local_dt }}{% endblock %}
+{% block body_class %}pr-body{% endblock %}
+{% macro stars_txt(n) -%}
+  <span class="hp-stars" aria-label="{{ n }} з 5">{% for i in range(5) %}<span class="{{ 'on' if i < n else 'off' }}">★</span>{% endfor %}</span>
+{%- endmacro %}
+{% block body %}
+<div class="hp-wrap">
+  <header class="hp-head card">
+    <a class="btn btn-sm" href="{{ url_for('admin.history') }}">← Історія</a>
+    <div class="hp-head-main">
+      <div class="hp-date">Завершено {{ snapshot.created_at|local_dt }}</div>
+      <h1>{{ title_html(snapshot.title) }}</h1>
+      <div class="hp-stats">
+        <span><b>{{ snapshot.participants_count }}</b> учасників</span>
+        <span><b>{{ snapshot.votes_count }}</b> оцінок</span>
+        <span><b>{{ snapshot.ideas_count }}</b> ідей</span>
+      </div>
+    </div>
+    <div class="hp-actions">
+      <a class="btn btn-primary btn-sm" href="{{ url_for('admin.history_export', snapshot_id=snapshot.id) }}">Завантажити Excel</a>
+      <form method="post" action="{{ url_for('admin.history_delete', snapshot_id=snapshot.id) }}"
+            onsubmit="return confirm('Видалити цей запис історії? Дію не можна скасувати.')">
+        <button class="btn btn-sm btn-danger" type="submit">Видалити</button>
+      </form>
+    </div>
+  </header>
+
+  <section class="card hp-section">
+    <h2>Рейтинг ідей</h2>
+    <div class="hp-table-wrap">
+      <table class="hp-table">
+        <thead>
+          <tr>
+            <th class="num">Місце</th><th>Ідея</th><th class="num">Бали</th><th class="num">Середня</th><th class="num">Голосів</th>
+            {% for s in scale|reverse %}<th class="num" title="{{ s.label }}">{{ s.score }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for idea in ideas %}{% set r = idea.results %}
+            <tr>
+              <td class="num"><span class="hp-rank">{{ r.rank if r.votes else '–' }}</span></td>
+              <td><b>{{ idea.title }}</b>
+                {% if idea.effects %}<div class="hp-fx">{% for e in idea.effects %}<span>{{ e.display or e.text }}</span>{% endfor %}</div>{% endif %}
+              </td>
+              <td class="num"><span class="total-chip{{ '' if r.total else ' is-empty' }}">{{ r.total }}</span></td>
+              <td class="num">{{ '%.2f'|format(r.avg)|replace('.', ',') if r.votes else '—' }}</td>
+              <td class="num">{{ r.votes }}</td>
+              {% for s in scale|reverse %}<td class="num">{{ r.dist[s.score|string] }}</td>{% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card hp-section">
+    <h2>Хто як голосував</h2>
+    <div class="hp-ideas">
+      {% for idea in ideas %}{% set r = idea.results %}
+        <article class="hp-idea">
+          <h3><span class="hp-rank">{{ r.rank if r.votes else '–' }}</span> {{ idea.title }}
+            <small>{{ r.total }} балів · {{ r.votes }} голосів</small></h3>
+          {% set any = namespace(v=false) %}
+          {% for s in scale|reverse %}{% set voters = r.voters[s.score|string] %}
+            {% if voters %}{% set any.v = true %}
+              <div class="hp-vrow">
+                <div class="hp-vhead">{% if s.score %}{{ stars_txt(s.score) }}{% else %}<span class="hp-zero">0</span>{% endif %} {{ s.label }} — {{ voters|length }}</div>
+                <ul>
+                  {% for v in voters %}
+                    <li><b>{{ v.company }}</b> — {{ v.name }}{% if v.phone %}, <a href="tel:{{ v.phone }}">{{ v.phone|phone }}</a>{% endif %}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+          {% endfor %}
+          {% if not any.v %}<p class="muted">Голосів немає</p>{% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card hp-section">
+    <h2>Учасники та контакти</h2>
+    <div class="hp-table-wrap">
+      <table class="hp-table">
+        <thead><tr><th>Компанія</th><th>Ім'я та прізвище</th><th>Телефон</th><th class="num">Оцінено ідей</th><th>Приєднався</th></tr></thead>
+        <tbody>
+          {% for p in data.participants %}
+            <tr>
+              <td><b>{{ p.company }}</b></td>
+              <td>{{ p.name }}</td>
+              <td>{% if p.phone %}<a href="tel:{{ p.phone }}">{{ p.phone|phone }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+              <td class="num">{{ p.votes_count }}</td>
+              <td>{{ p.created_at|local_dt }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="muted">Учасників не було</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

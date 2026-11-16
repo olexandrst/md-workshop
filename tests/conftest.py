@@ -67,9 +67,9 @@ def make_idea(admin):
 
 @pytest.fixture()
 def make_participant(app):
-    def _make(name="Олена", company="Меблі Плюс"):
+    def _make(name="Олена", company="Меблі Плюс", phone="+380 67 123 45 67"):
         c = api_client(app)
-        response = c.post("/api/join", json={"name": name, "company": company})
+        response = c.post("/api/join", json={"name": name, "company": company, "phone": phone})
         assert response.status_code == 200, response.get_json()
         return c
 

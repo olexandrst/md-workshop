@@ -31,7 +31,9 @@ def _style_sheet(ws, widths: list[int]) -> None:
 
 
 def _who(voters: list[dict]) -> str:
-    return ", ".join(f"{v['company']} ({v['name']})" for v in voters)
+    return ", ".join(
+        f"{v['company']} ({v['name']}{', ' + v['phone'] if v.get('phone') else ''})" for v in voters
+    )
 
 
 def build_workbook(state: dict) -> bytes:
@@ -64,26 +66,28 @@ def build_workbook(state: dict) -> bytes:
 
     # --- Голоси
     ws = wb.create_sheet("Голоси")
-    ws.append(["Компанія", "Ім'я", "Ідея", "Бал", "Оцінка"])
+    ws.append(["Компанія", "Ім'я та прізвище", "Телефон", "Ідея", "Бал", "Оцінка"])
     rows = []
     for idea in state["ideas"]:
         for score in ALLOWED_SCORES:
             for voter in idea["results"]["voters"][str(score)]:
-                rows.append([voter["company"], voter["name"], idea["title"], score, SCORE_LABELS[score]])
-    rows.sort(key=lambda row: (row[0].casefold(), row[1].casefold(), row[2].casefold()))
+                rows.append(
+                    [voter["company"], voter["name"], voter.get("phone", ""), idea["title"], score, SCORE_LABELS[score]]
+                )
+    rows.sort(key=lambda row: (row[0].casefold(), row[1].casefold(), row[3].casefold()))
     for row in rows:
         ws.append(row)
-    _style_sheet(ws, [30, 25, 45, 8, 32])
+    _style_sheet(ws, [30, 28, 18, 45, 8, 32])
 
     # --- Учасники
     ws = wb.create_sheet("Учасники")
-    ws.append(["Компанія", "Ім'я", "Оцінено ідей", "Приєднався"])
+    ws.append(["Компанія", "Ім'я та прізвище", "Телефон", "Оцінено ідей", "Приєднався"])
     for p in state["participants"]:
         joined = p["created_at"]
         if joined:
             joined = datetime.fromisoformat(joined).strftime("%Y-%m-%d %H:%M")
-        ws.append([p["company"], p["name"], p["votes_count"], joined])
-    _style_sheet(ws, [30, 25, 14, 18])
+        ws.append([p["company"], p["name"], p.get("phone", ""), p["votes_count"], joined])
+    _style_sheet(ws, [30, 28, 18, 14, 18])
 
     # --- Про воркшоп
     ws = wb.create_sheet("Воркшоп")

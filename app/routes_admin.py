@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 
 from flask import (
     Blueprint,
+    abort,
     Response,
     current_app,
     flash,
@@ -29,6 +30,10 @@ from .services import (
     delete_all_participants,
     delete_idea,
     delete_participant,
+    delete_snapshot,
+    finish_voting,
+    get_snapshot,
+    list_snapshots,
     get_workshop,
     reorder_ideas,
     reset_votes,
@@ -198,3 +203,70 @@ def api_reset_votes():
 def api_delete_participants():
     delete_all_participants()
     return _admin_state()
+
+
+@bp.post("/api/admin/finish")
+@admin_required
+def api_finish_voting():
+    snapshot = finish_voting()
+    response = build_state(admin=True)
+    response["changed"] = True
+    response["participant_url"] = participant_url()
+    response["snapshot_id"] = snapshot.id
+    return jsonify(response)
+
+
+# --------------------------------------------------------------------------- історія результатів
+
+
+def _snapshot_or_404(snapshot_id: int):
+    from .services import ServiceError
+
+    try:
+        return get_snapshot(snapshot_id)
+    except ServiceError:
+        abort(404)
+
+
+@bp.get("/admin/history")
+@admin_required
+def history():
+    return render_template("history.html", workshop=get_workshop(), snapshots=list_snapshots())
+
+
+@bp.get("/admin/history/<int:snapshot_id>")
+@admin_required
+def history_detail(snapshot_id: int):
+    snapshot = _snapshot_or_404(snapshot_id)
+    data = snapshot.data
+    ideas = sorted(data["ideas"], key=lambda i: i["results"]["rank"])
+    return render_template(
+        "history_detail.html",
+        workshop=get_workshop(),
+        snapshot=snapshot,
+        data=data,
+        ideas=ideas,
+        scale=scale_payload(),
+    )
+
+
+@bp.get("/admin/history/<int:snapshot_id>/export.xlsx")
+@admin_required
+def history_export(snapshot_id: int):
+    snapshot = _snapshot_or_404(snapshot_id)
+    payload = build_workbook(snapshot.data)
+    filename = f"workshop-results-{snapshot.created_at:%Y%m%d-%H%M}.xlsx"
+    return Response(
+        payload,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@bp.post("/admin/history/<int:snapshot_id>/delete")
+@admin_required
+def history_delete(snapshot_id: int):
+    _snapshot_or_404(snapshot_id)
+    delete_snapshot(snapshot_id)
+    flash("Запис історії видалено")
+    return redirect(url_for("admin.history"))

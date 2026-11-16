@@ -20,12 +20,14 @@ from .models import (
     EFFECT_LABELS,
     EFFECTS_PER_IDEA_MAX,
     NAME_MAX,
+    PHONE_MAX,
     SCALE,
     TITLE_MAX,
     WORKSHOP_ID,
     BusinessEffect,
     Idea,
     Participant,
+    ResultSnapshot,
     Vote,
     Workshop,
 )
@@ -143,9 +145,23 @@ def update_workshop(data: dict) -> None:
 # --------------------------------------------------------------------------- учасники
 
 
+_PHONE_ALLOWED = re.compile(r"^[+\d\s()\-.]+$")
+
+
+def clean_phone(value) -> str:
+    """Телефон: дозволені цифри, пробіли, дужки, дефіси; зберігаємо «+» і цифри (7–15 цифр)."""
+    raw = clean_line(value, "Телефон", PHONE_MAX)
+    if not _PHONE_ALLOWED.match(raw):
+        raise ServiceError("Телефон може містити лише цифри, пробіли, дужки, дефіси та «+»")
+    digits = re.sub(r"\D", "", raw)
+    if not 7 <= len(digits) <= 15:
+        raise ServiceError("Перевірте номер телефону: має бути від 7 до 15 цифр")
+    return ("+" if raw.lstrip().startswith("+") else "") + digits
+
+
 def _parse_identity(data: dict) -> tuple[str, str]:
-    name = clean_line(data.get("name"), "Ім'я", NAME_MAX)
-    company = clean_line(data.get("company"), "Компанія", COMPANY_MAX)
+    name = clean_line(data.get("name"), "Ім'я та прізвище", NAME_MAX)
+    company = clean_line(data.get("company"), "Назва компанії", COMPANY_MAX)
     return name, company
 
 
@@ -161,12 +177,19 @@ def _find_participant(name: str, company: str) -> Participant | None:
 def join_participant(data: dict) -> Participant:
     """Реєструє учасника або повертає існуючого з тим самим ім'ям і компанією."""
     name, company = _parse_identity(data)
+    phone = clean_phone(data.get("phone"))
     existing = _find_participant(name, company)
     if existing:
+        if existing.phone != phone:
+            existing.phone = phone
+            db.session.flush()
+            bump_version()
+            db.session.commit()
         return existing
     participant = Participant(
         name=name,
         company=company,
+        phone=phone,
         name_key=identity_key(name),
         company_key=identity_key(company),
     )
@@ -187,9 +210,11 @@ def join_participant(data: dict) -> Participant:
 
 def update_participant(participant: Participant, data: dict) -> Participant:
     name, company = _parse_identity(data)
+    phone = clean_phone(data.get("phone"))
     other = _find_participant(name, company)
     if other is not None and other.id != participant.id:
         raise ServiceError("Учасник з таким ім'ям і компанією вже існує", 409)
+    participant.phone = phone
     participant.name = name
     participant.company = company
     participant.name_key = identity_key(name)
@@ -382,13 +407,13 @@ def compute_results(ideas: list[Idea], with_voters: bool) -> dict[int, dict]:
 
     if with_voters:
         rows = db.session.execute(
-            select(Vote.idea_id, Vote.score, Participant.name, Participant.company)
+            select(Vote.idea_id, Vote.score, Participant.name, Participant.company, Participant.phone)
             .join(Participant, Participant.id == Vote.participant_id)
             .order_by(Participant.company_key, Participant.name_key)
         ).all()
-        for idea_id, score, name, company in rows:
+        for idea_id, score, name, company, phone in rows:
             dist[idea_id][score] += 1
-            voters[idea_id][score].append({"name": name, "company": company})
+            voters[idea_id][score].append({"name": name, "company": company, "phone": phone})
     else:
         rows = db.session.execute(
             select(Vote.idea_id, Vote.score, func.count(Vote.id)).group_by(Vote.idea_id, Vote.score)
@@ -493,6 +518,7 @@ def build_state(participant: Participant | None = None, admin: bool = False) -> 
             "id": participant.id,
             "name": participant.name,
             "company": participant.company,
+            "phone": participant.phone,
             "votes": {str(idea_id): score for idea_id, score in my_votes},
         }
 
@@ -510,6 +536,7 @@ def build_state(participant: Participant | None = None, admin: bool = False) -> 
                 "id": p.id,
                 "name": p.name,
                 "company": p.company,
+                "phone": p.phone,
                 "votes_count": int(counts.get(p.id, 0)),
                 "created_at": _iso(p.created_at),
             }
@@ -524,3 +551,44 @@ def scale_payload() -> list[dict]:
 
 def effect_catalog_payload() -> list[dict]:
     return [dict(item) for item in EFFECT_CATALOG]
+
+
+
+# --------------------------------------------------------------------------- історія результатів
+
+
+def finish_voting() -> ResultSnapshot:
+    """Завершує голосування: закриває його і зберігає повний знімок результатів в історію."""
+    workshop = get_workshop()
+    workshop.voting_open = False
+    db.session.flush()
+    bump_version()
+    db.session.commit()
+    state = build_state(admin=True)
+    state["finished_at"] = _iso(datetime.now(timezone.utc))
+    snapshot = ResultSnapshot(
+        title=state["workshop"]["title"],
+        participants_count=state["participants_count"],
+        votes_count=sum(i["results"]["votes"] for i in state["ideas"]),
+        ideas_count=len(state["ideas"]),
+        data=state,
+    )
+    db.session.add(snapshot)
+    db.session.commit()
+    return snapshot
+
+
+def list_snapshots() -> list[ResultSnapshot]:
+    return list(db.session.scalars(select(ResultSnapshot).order_by(ResultSnapshot.created_at.desc())).all())
+
+
+def get_snapshot(snapshot_id: int) -> ResultSnapshot:
+    snapshot = db.session.get(ResultSnapshot, snapshot_id)
+    if snapshot is None:
+        raise ServiceError("Запис історії не знайдено", 404)
+    return snapshot
+
+
+def delete_snapshot(snapshot_id: int) -> None:
+    db.session.delete(get_snapshot(snapshot_id))
+    db.session.commit()
