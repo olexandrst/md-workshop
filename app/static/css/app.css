@@ -1209,3 +1209,56 @@ body {
   .hist { gap: 4px; }
   .hist-row { height: clamp(26px, 1.6vw, 31px); font-size: clamp(13px, .82vw, 15.5px); }
 }
+
+/* ==========================================================================
+   Шапка: QR зліва (лише код), опис — на весь рядок, шкала — поруч зі статусом
+   ========================================================================== */
+.stage-head { gap: 18px; padding: 10px 16px 10px 10px; }
+.qr-card.qr-only {
+  align-self: center; padding: 6px; gap: 0; border-radius: 14px;
+  border: 1px solid var(--line); background: #ffffff; box-shadow: none;
+}
+.qr-card.qr-only img { width: clamp(96px, 5.9vw, 116px); }
+.sh-desc { white-space: nowrap; }
+.sh-stats { gap: 6px 18px; }
+.sh-stats .stars-legend { margin-left: 8px; padding-left: 18px; border-left: 1px solid var(--line); min-width: 0; overflow: hidden; }
+.admin-mode .sh-stats .stars-legend .legend-item:nth-child(n+5) { display: none; }  /* у режимі керування — компактніше */
+
+/* Зірки — насиченіші */
+:root { --star: #f59e0b; --star-empty: #dcdfe6; }
+:root[data-theme="dark"] { --star: #fbbf24; --star-empty: #3d404c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --star: #fbbf24; --star-empty: #3d404c; } }
+
+/* Ефекти — контрастніші */
+:root { --fx-bg: #e1f4e7; --fx-border: #b9e2c7; --fx-ink: #0f4a26; --fx-ink-2: #2f6544; --fx-icon: #15803d; }
+:root[data-theme="dark"] { --fx-bg: #173322; --fx-border: #2a5a3b; --fx-ink: #d4f7df; --fx-ink-2: #a8dcbb; --fx-icon: #4ade80; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --fx-bg: #173322; --fx-border: #2a5a3b; --fx-ink: #d4f7df; --fx-ink-2: #a8dcbb; --fx-icon: #4ade80; }
+}
+.tile-body .tile-effects li b { font-weight: 700; }
+.tile-body .tile-effects li .fx-icon svg { stroke-width: 2.4; }
+
+/* Номер місця на стрічці — нейтральний жирний білий */
+.tile-head .rank-badge,
+.tile.medal-1 .tile-head .rank-badge,
+.tile.medal-2 .tile-head .rank-badge,
+.tile.medal-3 .tile-head .rank-badge {
+  background: rgba(255, 255, 255, 0.14); color: #ffffff; font-weight: 800; box-shadow: none;
+}
+.tile.medal-1 .tile-head .rank-badge,
+.tile.medal-2 .tile-head .rank-badge,
+.tile.medal-3 .tile-head .rank-badge { background: rgba(255, 255, 255, 0.24); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.55); }
+.sp-rank, .medal-1 .sp-rank, .medal-2 .sp-rank, .medal-3 .sp-rank {
+  background: var(--band-2); color: #ffffff; box-shadow: none;
+}
+
+/* «Нова» — тиха мітка */
+.new-badge, .tile-head .new-badge, .idea-head .new-badge {
+  background: rgba(255, 255, 255, 0.18); color: #ffffff; box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.35); font-weight: 700; letter-spacing: .05em;
+}
+#sp-new { background: var(--surface-2); color: var(--text-2); border-color: var(--line); }
+.admin-mode .sh-stats .stars-legend .legend-item:nth-child(n+4) { display: none; }
+.sh-stats .stars-legend { flex-wrap: nowrap; }
+.tile-body .tile-effects { overflow: hidden; }
+.tile-body .tile-effects li { max-width: 100%; }

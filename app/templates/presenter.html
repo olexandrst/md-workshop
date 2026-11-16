@@ -12,24 +12,20 @@
 {% block body %}
 <div class="stage" id="stage">
   <header class="stage-head" id="stage-head">
-    <div class="brand" aria-label="{{ brand_name }}">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text">
-        <span class="brand-name">{{ brand_name }}</span>
-        <span class="brand-tagline">{{ brand_tagline }}</span>
-      </span>
-    </div>
+    <button class="qr-card qr-only" id="qr-open" type="button" title="Скануйте, щоб голосувати. Натисніть — QR на весь екран (Q)" aria-label="QR-код для голосування — показати на весь екран">
+      <img src="{{ url_for('public.qr_code') }}" alt="QR-код сторінки голосування" width="200" height="200">
+    </button>
     <div class="sh-main">
       <h1 id="ws-title" class="sh-title editable" title="Натисніть, щоб змінити назву та пояснення">{{ title_html(workshop.title) }}</h1>
       <div class="sh-row">
         <p id="ws-desc" class="sh-desc editable" title="Натисніть, щоб змінити назву та пояснення">{{ workshop.description }}</p>
-        <div class="stars-legend" id="legend" aria-label="Шкала оцінок"></div>
       </div>
       <div class="sh-row">
         <div class="sh-stats">
           <span id="voting-pill" class="pill open">Голосування відкрите</span>
           <span class="stat"><b id="stat-participants">0</b> <span id="stat-participants-label">учасників</span></span>
           <span class="stat"><b id="stat-votes">0</b> <span id="stat-votes-label">оцінок</span></span>
+          <div class="stars-legend" id="legend" aria-label="Шкала оцінок"></div>
           <span class="url-warning" id="url-warning" hidden
                 title="Відкрийте цей екран за IP-адресою комп'ютера в локальній мережі або задайте змінну PUBLIC_URL">
             ⚠ QR веде на localhost — телефони його не відкриють
@@ -63,15 +59,9 @@
         </div>
       </div>
     </div>
-    <button class="qr-card" id="qr-open" type="button" title="Показати QR-код на весь екран (Q)">
-      <span class="qr-text">
-        <span class="qr-caption">Голосуйте з телефона</span>
-        <span class="qr-url" id="qr-url"></span>
-      </span>
-      <img src="{{ url_for('public.qr_code') }}" alt="QR-код сторінки голосування" width="200" height="200">
-    </button>
   </header>
 
+  <span id="qr-url" hidden></span>
   <main id="ideas" class="tiles" aria-live="off"></main>
 </div>
 
