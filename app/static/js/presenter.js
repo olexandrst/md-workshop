@@ -185,7 +185,7 @@
     p.title = el("h2", { class: "tile-title" });
     p.newBadge = el("span", { class: "new-badge", text: "Нова" });
     p.effects = el("ul", { class: "effects tile-effects", "aria-label": "Бізнес-ефекти" });
-    p.avgStars = stars(0, "lg");
+    p.avgStars = stars(0, "md");
     p.avgNum = el("b", { class: "avg-num" });
     p.total = el("b", { class: "total-num" });
     p.totalUnit = el("span", { class: "total-unit" });
@@ -206,12 +206,13 @@
       "article",
       { class: "tile", dataset: { id: ideaId }, tabindex: "0", title: "Відкрити на весь екран" },
       el("div", { class: "tile-head" }, p.rank, p.title, p.newBadge),
-      p.effects,
+      // Порядок читання: загальний бал → середня оцінка → ефекти (стовпчиком, до 4 рядків)
       el(
         "div",
-        { class: "tile-score" },
+        { class: "tile-body" },
         p.totalBadge,
-        el("div", { class: "tile-avg" }, el("div", { class: "avg-line" }, p.avgStars, p.avgNum), p.votes)
+        el("div", { class: "tile-avg" }, p.avgNum, p.avgStars, p.votes),
+        p.effects
       ),
       p.hist,
       actions
@@ -235,6 +236,7 @@
     if (medal) tile.root.classList.add(medal);
 
     p.title.textContent = idea.title;
+    p.title.title = idea.title;
     p.newBadge.hidden = !isNewIdea(idea, d.server_time);
     // Плитка: сітка 2×2 — до 4 ефектів; якщо більше, четверта клітинка «+N ще» (повний список — у spotlight).
     const TILE_FX = 4;
@@ -254,6 +256,7 @@
     p.totalUnit.textContent = plural(r.total, FORMS.points);
     p.totalBadge.classList.toggle("is-empty", r.total === 0);
     p.votes.textContent = `середня · ${r.votes} ${plural(r.votes, FORMS.votes)}`;
+    tile.root.classList.toggle("no-effects", idea.effects.length === 0);
     renderHist(p.hist, r, d.workshop.show_names, false);
 
     const canMove = state.sort === "order";

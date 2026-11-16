@@ -1132,13 +1132,80 @@ body {
 .total-badge .total-num { font-size: clamp(21px, 1.45vw, 28px); }
 .hist { gap: 2px; }
 .hist-row { height: clamp(23px, 1.38vw, 27px); }
-@container tile (max-height: 330px) {
-  .tile-effects li:nth-child(n+3) { display: none; }
-}
-@container tile (max-height: 280px) {
-  .tile-effects { display: none; }
-}
+
 .tile-effects li.fx { align-items: center; line-height: 1.2; }
 .tile-effects li.fx-more { justify-content: center; }
 .tile-effects li.fx-custom::before { margin-top: 0; align-self: center; }
 .tile-effects li.fx-more .fx-body { text-align: center; }
+
+/* ==========================================================================
+   Плитка v3: назва завжди повністю → [загальний бал | середня | ефекти стовпчиком] → оцінки
+   ========================================================================== */
+.tile { gap: 10px; padding-bottom: 12px; }
+.tile > * { flex: none; }                 /* жоден блок не стискається — назва не обрізається */
+.tile-head { flex: none; padding: 11px 20px 10px; min-height: 0; }
+.tile-title { font-size: clamp(16px, 1.15vw, 23px); line-height: 1.22; }
+
+.tile-body {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 14px;
+  padding: 2px 0 10px; border-bottom: 1px solid var(--line);
+}
+.tile.no-effects .tile-body { grid-template-columns: auto auto; }
+.tile-body .total-badge { width: clamp(56px, 3.6vw, 68px); }
+.tile-body .total-badge .total-num { font-size: clamp(20px, 1.4vw, 27px); }
+.tile-body .tile-avg { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.tile-body .avg-num { font-size: clamp(22px, 1.55vw, 30px); line-height: 1; }
+.tile-body .avg-cap { font-size: clamp(11.5px, .7vw, 13px); }
+.stars.md { --star-size: clamp(15px, 1vw, 19px); }
+
+/* Ефекти: вертикальний список до 4 рядків, з тонкою зеленою лінією зліва */
+.tile-body .tile-effects {
+  display: flex; flex-direction: column; gap: 3px; margin: 0; min-width: 0;
+  padding: 2px 0 2px 14px; border-left: 2px solid var(--fx-border);
+}
+.tile-body .tile-effects li {
+  display: flex; align-items: center; gap: 7px; height: auto; min-width: 0;
+  padding: 0; border: 0; border-radius: 0; background: none;
+  font-size: clamp(12.5px, .78vw, 14.5px); line-height: 1.3; color: var(--fx-ink);
+}
+.tile-body .tile-effects li b { font-weight: 600; color: var(--fx-ink); }
+.tile-body .tile-effects li .fx-icon { color: var(--fx-icon); }
+.tile-body .tile-effects li.fx-custom::before { width: 6px; height: 6px; margin: 0 4px 0 3px; background: var(--fx-icon); }
+.tile-body .tile-effects li.fx-more { justify-content: flex-start; border: 0; color: var(--fx-ink-2); font-weight: 600; padding-left: 24px; }
+.tile-body .tile-effects li.fx-more .fx-body { text-align: left; }
+.tile-body .tile-effects .fx-body { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.hist-row { height: clamp(22px, 1.32vw, 26px); }
+
+/* Невисокі екрани: компактніше, а не обрізання */
+@container tile (max-height: 345px) {
+  .tile { gap: 7px; }
+  .tile-body { padding-bottom: 7px; }
+  .hist-row { height: 21px; font-size: 12px; }
+  .tile-body .tile-effects li { font-size: 12.5px; line-height: 1.22; }
+}
+@container tile (max-height: 300px) {
+  .tile-body .tile-effects li:nth-child(n+4) { display: none; }
+  .hist-names { display: none; }
+}
+
+/* QR-блок: підпис і адреса завжди вміщаються */
+.qr-text { max-width: 132px; gap: 3px; }
+.qr-caption { font-size: 14px; }
+.qr-url { font-size: 11.5px; line-height: 1.25; }
+
+/* Високі плитки (Full HD на весь екран): крупніше, щоб краще читалось із залу */
+@container tile (min-height: 395px) {
+  .tile { gap: 13px; }
+  .tile-head { padding: 14px 20px 13px; }
+  .tile-title { font-size: clamp(18px, 1.3vw, 25px); }
+  .tile-body { gap: 18px; padding: 6px 0 14px; }
+  .tile-body .total-badge { width: clamp(66px, 4.2vw, 80px); }
+  .tile-body .total-badge .total-num { font-size: clamp(24px, 1.65vw, 32px); }
+  .tile-body .avg-num { font-size: clamp(26px, 1.8vw, 34px); }
+  .stars.md { --star-size: clamp(17px, 1.15vw, 21px); }
+  .tile-body .tile-effects { gap: 5px; }
+  .tile-body .tile-effects li { font-size: clamp(13.5px, .86vw, 16px); }
+  .hist { gap: 4px; }
+  .hist-row { height: clamp(26px, 1.6vw, 31px); font-size: clamp(13px, .82vw, 15.5px); }
+}
