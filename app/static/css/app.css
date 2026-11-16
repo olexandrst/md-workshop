@@ -1306,3 +1306,14 @@ body {
 /* Spotlight: кнопки редагування ефектів */
 .sp-fx-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .sp-fx-actions .btn { min-height: 40px; font-size: 15px; }
+
+/* Стрічка з назвою — однакова висота на всіх плитках (завжди під 2 рядки) */
+.tile-head {
+  --title-fs: clamp(16px, 1.15vw, 23px); --title-pad: 22px;
+  height: calc(var(--title-fs) * 1.22 * 2 + var(--title-pad));
+  padding-top: 0; padding-bottom: 0; align-items: center; box-sizing: border-box;
+}
+.tile-head .tile-title { font-size: var(--title-fs); line-height: 1.22; }
+@container tile (min-height: 395px) {
+  .tile-head { --title-fs: clamp(18px, 1.3vw, 25px); --title-pad: 28px; }
+}
