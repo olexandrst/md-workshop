@@ -610,8 +610,7 @@ a { color: var(--accent); }
 }
 .tile:hover .tile-actions, .tile:focus-within .tile-actions { opacity: 1; }
 
-@container tile (max-height: 290px) {
-  .tile-effects { display: none; }
+@container tile (max-height: 280px) {
   .tile-score { margin-top: auto; }
 }
 
@@ -1099,3 +1098,47 @@ body {
 
 /* Spotlight: назва з синім акцентом зліва */
 .sp-title { padding-left: 18px; border-left: 6px solid var(--band-2); }
+
+/* ==========================================================================
+   Ефекти на плитці — акуратна сітка 2×2 (до 4 видно завжди)
+   ========================================================================== */
+.tile-effects {
+  flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;
+  margin: 2px 0 0; overflow: visible; -webkit-mask-image: none; mask-image: none;
+}
+.tile-effects li {
+  display: flex; align-items: center; gap: 7px; min-width: 0; max-width: none;
+  height: clamp(28px, 1.65vw, 32px); padding: 0 10px; border-radius: 9px;
+  font-size: clamp(12.5px, .76vw, 14.5px);
+}
+.tile-effects li .fx-icon { margin-top: 0; }
+.tile-effects li.fx-custom::before { margin-top: 0; }
+.tile-effects .fx-body { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile-effects li.fx-more { justify-content: center; background: transparent; border-style: dashed; color: var(--fx-ink-2); font-weight: 600; }
+.tile-effects li.fx-more::before { display: none; }
+.tile-effects[hidden] { display: none; }
+
+/* Звільняємо місце: компактніша шапка, коло суми та рядки оцінок */
+.stage { padding-top: 14px; }
+.stage-head { padding: 10px 14px 10px 18px; margin-bottom: 14px; }
+.sh-main { gap: 3px; }
+.sh-row { min-height: 32px; }
+.qr-card { padding: 6px 10px 6px 6px; }
+.qr-card img { width: clamp(84px, 5vw, 98px); }
+.tile { gap: 9px; padding-bottom: 14px; }
+.tile-head { padding: 12px 20px 11px; min-height: 0; }
+.tile-score { padding-top: 8px; }
+.total-badge { width: clamp(58px, 3.7vw, 70px); }
+.total-badge .total-num { font-size: clamp(21px, 1.45vw, 28px); }
+.hist { gap: 2px; }
+.hist-row { height: clamp(23px, 1.38vw, 27px); }
+@container tile (max-height: 330px) {
+  .tile-effects li:nth-child(n+3) { display: none; }
+}
+@container tile (max-height: 280px) {
+  .tile-effects { display: none; }
+}
+.tile-effects li.fx { align-items: center; line-height: 1.2; }
+.tile-effects li.fx-more { justify-content: center; }
+.tile-effects li.fx-custom::before { margin-top: 0; align-self: center; }
+.tile-effects li.fx-more .fx-body { text-align: center; }

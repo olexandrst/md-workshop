@@ -236,7 +236,16 @@
 
     p.title.textContent = idea.title;
     p.newBadge.hidden = !isNewIdea(idea, d.server_time);
-    p.effects.replaceChildren(...idea.effects.map((e) => effectItem(e, true)));
+    // Плитка: сітка 2×2 — до 4 ефектів; якщо більше, четверта клітинка «+N ще» (повний список — у spotlight).
+    const TILE_FX = 4;
+    const shown = idea.effects.length > TILE_FX ? idea.effects.slice(0, TILE_FX - 1) : idea.effects;
+    const fxItems = shown.map((e) => effectItem(e, true));
+    if (idea.effects.length > TILE_FX) {
+      const rest = idea.effects.slice(TILE_FX - 1);
+      fxItems.push(el("li", { class: "fx fx-more", title: rest.map((e) => e.display).join("\n") },
+        el("span", { class: "fx-body", text: `+${rest.length} ще` })));
+    }
+    p.effects.replaceChildren(...fxItems);
     p.effects.hidden = idea.effects.length === 0;
 
     setStars(p.avgStars, r.avg);
