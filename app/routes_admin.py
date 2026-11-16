@@ -32,6 +32,7 @@ from .services import (
     get_workshop,
     reorder_ideas,
     reset_votes,
+    effect_catalog_payload,
     scale_payload,
     update_idea,
     update_workshop,
@@ -104,7 +105,11 @@ def presenter():
     return render_template(
         "presenter.html",
         workshop=get_workshop(),
-        boot={"scale": scale_payload(), "participantUrl": participant_url()},
+        boot={
+            "scale": scale_payload(),
+            "effects": effect_catalog_payload(),
+            "participantUrl": participant_url(),
+        },
     )
 
 

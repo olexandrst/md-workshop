@@ -51,7 +51,7 @@ def build_workbook(state: dict) -> bytes:
             [
                 r["rank"],
                 idea["title"],
-                "\n".join(e["text"] for e in idea["effects"]),
+                "\n".join(e["display"] for e in idea["effects"]),
                 r["total"],
                 r["avg"],
                 r["votes"],

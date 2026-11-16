@@ -16,6 +16,8 @@ from .models import (
     COMPANY_MAX,
     DESCRIPTION_MAX,
     EFFECT_MAX,
+    EFFECT_CATALOG,
+    EFFECT_LABELS,
     EFFECTS_PER_IDEA_MAX,
     NAME_MAX,
     SCALE,
@@ -265,28 +267,49 @@ def cast_vote(participant: Participant, data: dict) -> int | None:
 # --------------------------------------------------------------------------- ідеї
 
 
-def _parse_idea(data: dict) -> tuple[str, str, list[str]]:
-    title = clean_line(data.get("title"), "Назва ідеї", TITLE_MAX)
-    description = clean_text(data.get("description"), "Опис", DESCRIPTION_MAX)
-    raw_effects = data.get("effects") or []
+def parse_effects(raw_effects) -> list[tuple[str | None, str]]:
+    """Ефекти: [{"kind": "cost", "text": "уточнення"}, {"kind": null, "text": "власний"}, "власний"].
+
+    Типовий ефект (kind з каталогу) може бути без уточнення; власний — лише з текстом.
+    Порожні власні ефекти відкидаються, повтори типових — теж.
+    """
+    if raw_effects is None:
+        return []
     if not isinstance(raw_effects, list):
         raise ServiceError("Бізнес-ефекти мають бути списком")
-    effects = []
+    effects: list[tuple[str | None, str]] = []
+    seen_kinds: set[str] = set()
     for item in raw_effects:
-        text = item.get("text") if isinstance(item, dict) else item
+        if isinstance(item, dict):
+            kind, text = item.get("kind") or None, item.get("text")
+        else:
+            kind, text = None, item
+        if kind is not None and kind not in EFFECT_LABELS:
+            raise ServiceError("Невідомий тип бізнес-ефекту")
         text = clean_line(text, "Бізнес-ефект", EFFECT_MAX, required=False)
-        if text:
-            effects.append(text)
+        if kind is None and not text:
+            continue
+        if kind is not None:
+            if kind in seen_kinds:
+                continue
+            seen_kinds.add(kind)
+        effects.append((kind, text))
     if len(effects) > EFFECTS_PER_IDEA_MAX:
         raise ServiceError(f"Не більше {EFFECTS_PER_IDEA_MAX} бізнес-ефектів на ідею")
-    return title, description, effects
+    return effects
 
 
-def _set_effects(idea: Idea, effects: list[str]) -> None:
+def _parse_idea(data: dict) -> tuple[str, str, list[tuple[str | None, str]]]:
+    title = clean_line(data.get("title"), "Назва ідеї", TITLE_MAX)
+    description = clean_text(data.get("description"), "Опис", DESCRIPTION_MAX)
+    return title, description, parse_effects(data.get("effects"))
+
+
+def _set_effects(idea: Idea, effects: list[tuple[str | None, str]]) -> None:
     idea.effects.clear()
     db.session.flush()
-    for position, text in enumerate(effects):
-        idea.effects.append(BusinessEffect(text=text, position=position))
+    for position, (kind, text) in enumerate(effects):
+        idea.effects.append(BusinessEffect(kind=kind, text=text, position=position))
 
 
 def create_idea(data: dict) -> Idea:
@@ -422,7 +445,10 @@ def idea_to_dict(idea: Idea) -> dict:
         "description": idea.description,
         "position": idea.position,
         "created_at": _iso(idea.created_at),
-        "effects": [{"id": e.id, "text": e.text} for e in idea.effects],
+        "effects": [
+            {"id": e.id, "kind": e.kind, "label": e.label, "text": e.text, "display": e.display}
+            for e in idea.effects
+        ],
     }
 
 
@@ -489,3 +515,7 @@ def build_state(participant: Participant | None = None, admin: bool = False) -> 
 
 def scale_payload() -> list[dict]:
     return [dict(item) for item in SCALE]
+
+
+def effect_catalog_payload() -> list[dict]:
+    return [dict(item) for item in EFFECT_CATALOG]

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 from flask import Flask, current_app
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from .extensions import db
 from .models import WORKSHOP_ID, Workshop
@@ -14,8 +14,17 @@ from .services import DEFAULT_DESCRIPTION, DEFAULT_TITLE, bump_version, reset_vo
 _INIT_LOCK_ID = 7_274_031  # довільне число для pg_advisory_lock
 
 
+def _upgrade_schema() -> None:
+    """Мінімальні міграції для баз, створених попередніми версіями застосунку."""
+    columns = {c["name"] for c in inspect(db.engine).get_columns("business_effect")}
+    if "kind" not in columns:
+        with db.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE business_effect ADD COLUMN kind VARCHAR(32)"))
+
+
 def _init_schema(seed_demo: bool) -> bool:
     db.create_all()
+    _upgrade_schema()
     created = False
     if db.session.get(Workshop, WORKSHOP_ID) is None:
         db.session.add(Workshop(id=WORKSHOP_ID, title=DEFAULT_TITLE, description=DEFAULT_DESCRIPTION))

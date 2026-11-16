@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const { api, el, plural, fmt, FORMS, SCALE, scaleItem, segBar, toast, poller, stars, setStars, isNewIdea } = window.WS;
+  const { api, el, plural, fmt, FORMS, SCALE, scaleItem, segBar, toast, poller, stars, setStars, isNewIdea, effectItem } = window.WS;
   const $ = (id) => document.getElementById(id);
   const POLL_MS = 3000;
 
@@ -173,7 +173,7 @@
     p.more.hidden = !long;
     if (!long) p.desc.classList.remove("clamped");
 
-    p.effects.replaceChildren(...idea.effects.map((e) => el("li", { text: e.text })));
+    p.effects.replaceChildren(...idea.effects.map((e) => effectItem(e, false)));
     p.effects.hidden = idea.effects.length === 0;
 
     const score = myVote(idea.id);
@@ -193,7 +193,8 @@
     p.results.hidden = !r;
     if (r) {
       p.resTotal.replaceChildren(
-        el("b", { text: fmt(r.total) }), ` ${plural(r.total, FORMS.points)} · ${r.votes} ${plural(r.votes, FORMS.votes)}`
+        el("b", { class: `total-chip${r.total ? "" : " is-empty"}`, text: fmt(r.total) }),
+        ` ${plural(r.total, FORMS.points)} · ${r.votes} ${plural(r.votes, FORMS.votes)}`
       );
       p.resAvg.hidden = !r.votes;
       setStars(p.avgStars, r.avg);

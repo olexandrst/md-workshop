@@ -14,6 +14,7 @@ from .services import (
     current_version,
     get_workshop,
     join_participant,
+    effect_catalog_payload,
     scale_payload,
     update_participant,
 )
@@ -52,7 +53,7 @@ def index():
     return render_template(
         "participant.html",
         workshop=workshop,
-        boot={"scale": scale_payload()},
+        boot={"scale": scale_payload(), "effects": effect_catalog_payload()},
     )
 
 

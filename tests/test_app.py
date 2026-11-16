@@ -331,3 +331,65 @@ def test_new_ideas_appear_on_top(admin, make_idea, client):
     state = admin.get("/api/admin/state").get_json()
     assert [i["title"] for i in state["ideas"]] == ["Третя", "Друга", "Перша"]
     assert state["server_time"] and state["ideas"][0]["created_at"]
+
+
+# --------------------------------------------------------------------------- типові бізнес-ефекти
+
+
+def test_standard_and_custom_effects(admin, client):
+    response = admin.post(
+        "/api/admin/ideas",
+        json={
+            "title": "Розкрій",
+            "effects": [
+                {"kind": "materials", "text": "−8% відходів плити"},
+                {"kind": "cost", "text": ""},
+                {"kind": "cost", "text": "дубль"},  # повтор типового ефекту відкидається
+                {"kind": None, "text": "Власний ефект"},
+                {"kind": None, "text": "  "},  # порожній власний відкидається
+            ],
+        },
+    )
+    assert response.status_code == 201
+    effects = response.get_json()["ideas"][0]["effects"]
+    assert [(e["kind"], e["label"], e["text"]) for e in effects] == [
+        ("materials", "Економія сировини", "−8% відходів плити"),
+        ("cost", "Зниження витрат", ""),
+        (None, None, "Власний ефект"),
+    ]
+    assert [e["display"] for e in effects] == [
+        "Економія сировини: −8% відходів плити",
+        "Зниження витрат",
+        "Власний ефект",
+    ]
+    # учасники бачать ті самі ефекти
+    assert client.get("/api/state").get_json()["ideas"][0]["effects"][0]["label"] == "Економія сировини"
+
+
+def test_unknown_effect_kind_rejected(admin):
+    response = admin.post("/api/admin/ideas", json={"title": "X", "effects": [{"kind": "magic", "text": ""}]})
+    assert response.status_code == 400
+
+
+def test_effect_catalog_in_pages(admin, client):
+    # Каталог передається у boot-JSON сторінок (кирилиця там екранована як \\uXXXX)
+    assert '"productivity"' in client.get("/").get_data(as_text=True)
+    assert '"control"' in admin.get("/admin").get_data(as_text=True)
+
+
+def test_upgrade_adds_effect_kind_column(app):
+    from sqlalchemy import inspect, text
+
+    with app.app_context():
+        db.session.execute(text("DROP TABLE business_effect"))
+        db.session.execute(
+            text(
+                "CREATE TABLE business_effect (id INTEGER PRIMARY KEY, "
+                "idea_id INTEGER NOT NULL REFERENCES idea(id) ON DELETE CASCADE, "
+                "text VARCHAR(300) NOT NULL, position INTEGER NOT NULL)"
+            )
+        )
+        db.session.commit()
+        init_db()
+        columns = {c["name"] for c in inspect(db.engine).get_columns("business_effect")}
+        assert "kind" in columns

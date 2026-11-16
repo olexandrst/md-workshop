@@ -235,8 +235,47 @@
     return age >= 0 && age < NEW_IDEA_MS;
   }
 
+  // ------------------------------------------------------------------ бізнес-ефекти
+
+  const EFFECT_CATALOG = boot.effects || [];
+  const EFFECT_ICONS = {
+    speed: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+    cost: '<path d="M22 17l-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/>',
+    revenue: '<path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+    defects: '<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="M22 4 12 14l-3-3"/>',
+    quality: '<circle cx="12" cy="8" r="6"/><path d="M15.5 12.9 17 22l-5-3-5 3 1.5-9.1"/>',
+    productivity: '<path d="m12 14 4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>',
+    people: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+    materials: '<path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>',
+    inventory: '<path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>',
+    customer: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+    control: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  };
+
+  function effectMeta(kind) {
+    return EFFECT_CATALOG.find((c) => c.kind === kind);
+  }
+
+  function effectIcon(kind) {
+    const node = el("span", { class: "fx-icon", "aria-hidden": "true" });
+    node.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${EFFECT_ICONS[kind] || ""}</svg>`;
+    return node;
+  }
+
+  /** Чіп ефекту. compact (плитка): лише назва типового ефекту, уточнення — у підказці. */
+  function effectItem(effect, compact) {
+    const meta = effect.kind ? effectMeta(effect.kind) : null;
+    const tooltip = [effect.display, meta && meta.hint].filter(Boolean).join("\n");
+    if (!effect.kind) {
+      return el("li", { class: "fx fx-custom", title: tooltip }, el("span", { class: "fx-body", text: effect.text }));
+    }
+    const body = el("span", { class: "fx-body" }, el("b", { text: effect.label }));
+    if (!compact && effect.text) body.append(el("span", { class: "fx-detail", text: ` — ${effect.text}` }));
+    return el("li", { class: `fx fx-${effect.kind}`, title: tooltip }, effectIcon(effect.kind), body);
+  }
+
   window.WS = {
     boot, SCALE, api, ApiError, el, plural, fmt, FORMS, scaleItem, segBar, toast, poller,
-    stars, setStars, isNewIdea,
+    stars, setStars, isNewIdea, EFFECT_CATALOG, effectMeta, effectIcon, effectItem,
   };
 })();

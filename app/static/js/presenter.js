@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const { api, el, plural, fmt, FORMS, SCALE, toast, poller, boot, stars, setStars, isNewIdea } = window.WS;
+  const { api, el, plural, fmt, FORMS, SCALE, toast, poller, boot, stars, setStars, isNewIdea, EFFECT_CATALOG, effectMeta, effectIcon, effectItem } = window.WS;
   const $ = (id) => document.getElementById(id);
   const POLL_MS = 1500;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -189,7 +189,8 @@
     p.avgNum = el("b", { class: "avg-num" });
     p.total = el("b", { class: "total-num" });
     p.totalUnit = el("span", { class: "total-unit" });
-    p.votes = el("span", { class: "total-votes" });
+    p.totalBadge = el("div", { class: "total-badge", title: "Сума балів — головний показник ідеї" }, p.total, p.totalUnit);
+    p.votes = el("span", { class: "avg-cap" });
     p.hist = el("div", { class: "hist" });
     p.up = iconButton("up", "Вище", () => moveIdea(ideaId, -1));
     p.down = iconButton("down", "Нижче", () => moveIdea(ideaId, 1));
@@ -209,8 +210,8 @@
       el(
         "div",
         { class: "tile-score" },
-        el("div", { class: "tile-avg" }, p.avgStars, p.avgNum),
-        el("div", { class: "tile-total" }, el("span", null, p.total, p.totalUnit), p.votes)
+        p.totalBadge,
+        el("div", { class: "tile-avg" }, el("div", { class: "avg-line" }, p.avgStars, p.avgNum), p.votes)
       ),
       p.hist,
       actions
@@ -235,14 +236,15 @@
 
     p.title.textContent = idea.title;
     p.newBadge.hidden = !isNewIdea(idea, d.server_time);
-    p.effects.replaceChildren(...idea.effects.map((e) => el("li", { text: e.text })));
+    p.effects.replaceChildren(...idea.effects.map((e) => effectItem(e, true)));
     p.effects.hidden = idea.effects.length === 0;
 
     setStars(p.avgStars, r.avg);
     p.avgNum.textContent = r.votes ? fmt(r.avg) : "—";
     p.total.textContent = fmt(r.total);
-    p.totalUnit.textContent = ` ${plural(r.total, FORMS.points)}`;
-    p.votes.textContent = `${r.votes} ${plural(r.votes, FORMS.votes)}`;
+    p.totalUnit.textContent = plural(r.total, FORMS.points);
+    p.totalBadge.classList.toggle("is-empty", r.total === 0);
+    p.votes.textContent = `середня · ${r.votes} ${plural(r.votes, FORMS.votes)}`;
     renderHist(p.hist, r, d.workshop.show_names, false);
 
     const canMove = state.sort === "order";
@@ -345,16 +347,21 @@
     $("sp-counter").textContent = `${ids.indexOf(idea.id) + 1} / ${ids.length}`;
     $("sp-desc").textContent = idea.description;
     $("sp-desc").hidden = !idea.description;
-    $("sp-effects").replaceChildren(...idea.effects.map((e) => el("li", { text: e.text })));
+    $("sp-effects").replaceChildren(...idea.effects.map((e) => effectItem(e, false)));
     $("sp-effects-title").hidden = idea.effects.length === 0;
 
     $("sp-score").replaceChildren(
-      el("div", { class: "sp-avg" }, stars(r.avg, "xl"), el("b", { text: r.votes ? fmt(r.avg) : "—" })),
       el(
         "div",
-        { class: "sp-total" },
-        el("span", null, el("b", { text: fmt(r.total) }), ` ${plural(r.total, FORMS.points)}`),
-        el("span", { text: `${r.votes} ${plural(r.votes, FORMS.votes)} · середня оцінка` })
+        { class: `total-badge xl${r.total ? "" : " is-empty"}`, title: "Сума балів" },
+        el("b", { class: "total-num", text: fmt(r.total) }),
+        el("span", { class: "total-unit", text: plural(r.total, FORMS.points) })
+      ),
+      el(
+        "div",
+        { class: "sp-avg" },
+        el("div", { class: "avg-line" }, stars(r.avg, "xl"), el("b", { text: r.votes ? fmt(r.avg) : "—" })),
+        el("span", { class: "avg-cap", text: `середня оцінка · ${r.votes} ${plural(r.votes, FORMS.votes)}` })
       )
     );
     renderHist($("sp-hist"), r, state.data.workshop.show_names, true);
@@ -393,20 +400,74 @@
     }
   }
 
-  function effectRow(text) {
-    const input = el("input", { class: "input", maxlength: "300", placeholder: "Наприклад, скорочення витрат на логістику" });
-    input.value = text || "";
-    const row = el("div", { class: "effect-row" }, input);
-    row.append(iconButton("x", "Прибрати ефект", () => row.remove(), "danger"));
+  /** Рядок вибраного ефекту: типовий (іконка + назва + необов'язкове уточнення) або власний (текст). */
+  function effectRow(effect) {
+    const kind = (effect && effect.kind) || null;
+    const meta = kind ? effectMeta(kind) : null;
+    const input = el("input", {
+      class: "input",
+      maxlength: "300",
+      placeholder: kind ? "Уточнення, напр. «−15% на логістиці»" : "Власний ефект: напр. «Вихід на ринок ЄС»",
+      "aria-label": kind ? `Уточнення для «${meta.label}»` : "Власний бізнес-ефект",
+    });
+    input.value = (effect && effect.text) || "";
+    const tag = kind
+      ? el("span", { class: "fx-tag", title: meta.hint }, effectIcon(kind), meta.label)
+      : el("span", { class: "fx-tag custom", text: "Власний" });
+    const row = el("div", { class: `effect-row${kind ? "" : " custom"}`, dataset: kind ? { kind } : {} }, tag, input);
+    row.append(iconButton("x", "Прибрати ефект", () => { row.remove(); syncEffectChips(); }, "danger"));
     input.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
-        const next = effectRow("");
-        row.after(next);
-        next.querySelector("input").focus();
+        addCustomEffect(row);
       }
     });
     return row;
+  }
+
+  function addCustomEffect(after) {
+    const row = effectRow({ kind: null, text: "" });
+    if (after) after.after(row);
+    else $("effects-editor").append(row);
+    row.querySelector("input").focus();
+  }
+
+  function renderEffectCatalog() {
+    $("effect-catalog").replaceChildren(
+      ...EFFECT_CATALOG.map((c) => {
+        const chip = el(
+          "button",
+          { type: "button", class: "fx-chip", "aria-pressed": "false", title: c.hint, dataset: { kind: c.kind } },
+          effectIcon(c.kind),
+          c.label
+        );
+        chip.addEventListener("click", () => toggleEffectKind(c.kind));
+        return chip;
+      })
+    );
+  }
+
+  function toggleEffectKind(kind) {
+    const editor = $("effects-editor");
+    const existing = editor.querySelector(`.effect-row[data-kind="${kind}"]`);
+    if (existing) {
+      existing.remove();
+    } else {
+      // типові ефекти — перед власними
+      const row = effectRow({ kind, text: "" });
+      const firstCustom = editor.querySelector(".effect-row.custom");
+      editor.insertBefore(row, firstCustom);
+      row.querySelector("input").focus();
+    }
+    syncEffectChips();
+  }
+
+  function syncEffectChips() {
+    const selected = new Set([...$("effects-editor").querySelectorAll(".effect-row[data-kind]")].map((r) => r.dataset.kind));
+    $("effect-catalog").querySelectorAll(".fx-chip").forEach((chip) => {
+      chip.setAttribute("aria-pressed", String(selected.has(chip.dataset.kind)));
+    });
+    $("effects-empty").hidden = $("effects-editor").children.length > 0;
   }
 
   function openIdeaModal(id) {
@@ -415,8 +476,8 @@
     $("idea-modal-title").textContent = idea ? "Редагувати ідею" : "Нова ідея";
     $("idea-title").value = idea ? idea.title : "";
     $("idea-description").value = idea ? idea.description : "";
-    const effects = idea ? idea.effects.map((e) => e.text) : [""];
-    $("effects-editor").replaceChildren(...(effects.length ? effects : [""]).map(effectRow));
+    $("effects-editor").replaceChildren(...(idea ? idea.effects : []).map(effectRow));
+    syncEffectChips();
     $("idea-error").hidden = true;
     $("idea-modal").showModal();
     $("idea-title").focus();
@@ -427,7 +488,10 @@
     const payload = {
       title: $("idea-title").value,
       description: $("idea-description").value,
-      effects: [...$("effects-editor").querySelectorAll("input")].map((i) => i.value).filter((v) => v.trim()),
+      effects: [...$("effects-editor").querySelectorAll(".effect-row")].map((row) => ({
+        kind: row.dataset.kind || null,
+        text: row.querySelector("input").value,
+      })),
     };
     if (!payload.title.trim()) {
       $("idea-error").textContent = "Вкажіть назву ідеї";
@@ -451,9 +515,8 @@
   });
 
   $("effect-add").addEventListener("click", () => {
-    const row = effectRow("");
-    $("effects-editor").append(row);
-    row.querySelector("input").focus();
+    addCustomEffect(null);
+    syncEffectChips();
   });
 
   // ------------------------------------------------------------------ налаштування
@@ -639,6 +702,7 @@
   // ------------------------------------------------------------------ старт
 
   renderLegend();
+  renderEffectCatalog();
   applyModes();
   const poll = poller(refresh, POLL_MS);
   refresh()

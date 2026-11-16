@@ -30,6 +30,24 @@ SCALE: tuple[dict, ...] = (
 ALLOWED_SCORES: tuple[int, ...] = tuple(item["score"] for item in SCALE)
 SCORE_LABELS: dict[int, str] = {item["score"]: item["label"] for item in SCALE}
 
+# Каталог типових економічних ефектів. kind — стабільний код (іконка на фронтенді), label — назва,
+# hint — що саме вимірюємо (підказка ведучому). До типового ефекту можна дописати уточнення.
+EFFECT_CATALOG: tuple[dict, ...] = (
+    {"kind": "speed", "label": "Прискорення процесів", "hint": "Коротший цикл операцій і виконання замовлення"},
+    {"kind": "cost", "label": "Зниження витрат", "hint": "Менші операційні витрати на одиницю продукції"},
+    {"kind": "revenue", "label": "Зростання продажів", "hint": "Конверсія, середній чек, нові канали збуту"},
+    {"kind": "defects", "label": "Зменшення браку", "hint": "Менше браку, переробок, рекламацій і повернень"},
+    {"kind": "quality", "label": "Підвищення якості", "hint": "Стабільна якість продукції та сервісу"},
+    {"kind": "productivity", "label": "Підвищення продуктивності", "hint": "Більше результату з тих самих потужностей і людей"},
+    {"kind": "people", "label": "Вивільнення людського ресурсу", "hint": "Автоматизація рутини, менше ручної праці (FTE)"},
+    {"kind": "materials", "label": "Економія сировини", "hint": "Менше відходів ДСП/МДФ, тканин, фурнітури, енергії"},
+    {"kind": "inventory", "label": "Оптимізація запасів", "hint": "Нижчі залишки на складі, вивільнені обігові кошти"},
+    {"kind": "customer", "label": "Лояльність клієнтів", "hint": "Задоволеність, NPS, повторні покупки"},
+    {"kind": "control", "label": "Прозорість і керованість", "hint": "Рішення на даних, точні прогнози, контроль у реальному часі"},
+)
+EFFECT_LABELS: dict[str, str] = {item["kind"]: item["label"] for item in EFFECT_CATALOG}
+EFFECT_KIND_MAX = 32
+
 WORKSHOP_ID = 1
 
 TITLE_MAX = 200
@@ -92,10 +110,23 @@ class BusinessEffect(db.Model):
     idea_id: Mapped[int] = mapped_column(
         ForeignKey("idea.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    text: Mapped[str] = mapped_column(String(EFFECT_MAX), nullable=False)
+    # Код типового ефекту з EFFECT_CATALOG або NULL для власного ефекту.
+    kind: Mapped[str | None] = mapped_column(String(EFFECT_KIND_MAX), nullable=True)
+    # Для власного ефекту — його текст; для типового — необов'язкове уточнення.
+    text: Mapped[str] = mapped_column(String(EFFECT_MAX), nullable=False, default="")
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     idea: Mapped[Idea] = relationship(back_populates="effects")
+
+    @property
+    def label(self) -> str | None:
+        return EFFECT_LABELS.get(self.kind) if self.kind else None
+
+    @property
+    def display(self) -> str:
+        if self.label and self.text:
+            return f"{self.label}: {self.text}"
+        return self.label or self.text
 
 
 class Participant(db.Model):
