@@ -76,6 +76,16 @@ def register(app: Flask) -> None:
         db.session.commit()
         click.echo(f"Додано демо-ідей: {count}")
 
+    @app.cli.command("load-base-ideas")
+    @click.confirmation_option(prompt="Видалити ВСІ ідеї та їхні голоси і завантажити базовий набір?")
+    def load_base_ideas_command() -> None:
+        """Замінити всі ідеї базовим набором (6 рішень для меблевої фабрики)."""
+        from .services import replace_with_base_ideas
+
+        init_db(seed_demo=False)
+        count = replace_with_base_ideas()
+        click.echo(f"Завантажено базових ідей: {count}")
+
     @app.cli.command("reset-votes")
     @click.confirmation_option(prompt="Видалити всі голоси?")
     def reset_votes_command() -> None:

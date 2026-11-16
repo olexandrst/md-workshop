@@ -45,6 +45,7 @@ EFFECT_CATALOG: tuple[dict, ...] = (
     {"kind": "inventory", "label": "Оптимізація запасів", "hint": "Нижчі залишки на складі, вивільнені обігові кошти"},
     {"kind": "customer", "label": "Лояльність клієнтів", "hint": "Задоволеність, NPS, повторні покупки"},
     {"kind": "control", "label": "Прозорість і керованість", "hint": "Рішення на даних, точні прогнози, контроль у реальному часі"},
+    {"kind": "risk", "label": "Зниження ризиків", "hint": "Доказова база, аудит, комплаєнс, безпека праці, збереження знань"},
 )
 EFFECT_LABELS: dict[str, str] = {item["kind"]: item["label"] for item in EFFECT_CATALOG}
 EFFECT_KIND_MAX = 32

@@ -1364,3 +1364,13 @@ body {
 .hp-stars .on { color: var(--star); }
 .hp-stars .off { color: var(--star-empty); }
 .hp-zero { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--muted); font-size: 11px; }
+
+/* Структурований опис ідеї */
+.desc-label {
+  display: inline-block; padding: 1px 9px; margin-right: 2px; border-radius: 6px;
+  background: var(--band-1); color: #ffffff; font-size: .78em; font-weight: 700; letter-spacing: .02em;
+  vertical-align: .08em;
+}
+.sp-desc.is-long { font-size: clamp(15px, 1.02vw, 20px); line-height: 1.42; }
+.sp-desc .desc-label { font-size: .8em; }
+.idea-desc .desc-label { font-size: .75em; padding: 0 7px; }

@@ -32,6 +32,7 @@ from .services import (
     delete_participant,
     delete_snapshot,
     finish_voting,
+    replace_with_base_ideas,
     get_snapshot,
     list_snapshots,
     get_workshop,
@@ -270,3 +271,10 @@ def history_delete(snapshot_id: int):
     delete_snapshot(snapshot_id)
     flash("Запис історії видалено")
     return redirect(url_for("admin.history"))
+
+
+@bp.post("/api/admin/load-base-ideas")
+@admin_required
+def api_load_base_ideas():
+    replace_with_base_ideas()
+    return _admin_state()

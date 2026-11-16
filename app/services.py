@@ -592,3 +592,17 @@ def get_snapshot(snapshot_id: int) -> ResultSnapshot:
 def delete_snapshot(snapshot_id: int) -> None:
     db.session.delete(get_snapshot(snapshot_id))
     db.session.commit()
+
+
+
+def replace_with_base_ideas() -> int:
+    """Видаляє всі ідеї (разом з їхніми голосами та ефектами) і завантажує базовий набір."""
+    from .seed import seed_demo_ideas
+
+    bump_version()
+    db.session.execute(delete(Vote))
+    db.session.execute(delete(BusinessEffect))
+    db.session.execute(delete(Idea))
+    count = seed_demo_ideas()
+    db.session.commit()
+    return count

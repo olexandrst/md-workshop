@@ -250,6 +250,7 @@
     inventory: '<path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>',
     customer: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
     control: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+    risk: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
   };
 
   function effectMeta(kind) {
@@ -285,8 +286,26 @@
     node.replaceChildren(`${title.slice(0, index)}: `, el("span", { class: "accent-text", text: tail }));
   }
 
+  /** Опис ідеї: рядки «Проблема:», «Рішення:», «Зв'язок:» отримують виділену мітку. */
+  const SECTION_RE = /^(Проблема|Рішення|Зв['’]язок|Ефекти|Результат)\s*:\s*/;
+  function setRichText(node, text) {
+    const parts = [];
+    (text || "").split("\n").forEach((line, index) => {
+      if (index) parts.push("\n");
+      const match = line.match(SECTION_RE);
+      if (match) {
+        parts.push(el("b", { class: "desc-label", text: match[1] }), " ", line.slice(match[0].length));
+      } else {
+        parts.push(line);
+      }
+    });
+    node.replaceChildren(...parts);
+    node.classList.toggle("is-long", (text || "").length > 500);
+  }
+
   window.WS = {
     setTitle,
+    setRichText,
     boot, SCALE, api, ApiError, el, plural, fmt, FORMS, scaleItem, segBar, toast, poller,
     stars, setStars, isNewIdea, EFFECT_CATALOG, effectMeta, effectIcon, effectItem,
   };

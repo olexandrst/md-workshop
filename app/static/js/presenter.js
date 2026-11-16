@@ -362,7 +362,7 @@
     $("sp-title").textContent = idea.title;
     $("sp-new").hidden = !isNewIdea(idea, state.data.server_time);
     $("sp-counter").textContent = `${ids.indexOf(idea.id) + 1} / ${ids.length}`;
-    $("sp-desc").textContent = idea.description;
+    window.WS.setRichText($("sp-desc"), idea.description);
     $("sp-desc").hidden = !idea.description;
     $("sp-effects").replaceChildren(...idea.effects.map((e) => effectItem(e, false)));
     $("sp-effects-title").hidden = idea.effects.length === 0 && state.present;
@@ -630,6 +630,20 @@
     try {
       await call("POST", "/api/admin/reset-votes");
       toast("Голоси обнулено");
+    } catch (err) {
+      toast(err.message, "error");
+    }
+  });
+
+  $("btn-load-base-ideas").addEventListener("click", async () => {
+    const ok = window.confirm(
+      "Видалити ВСІ поточні ідеї (разом з їхніми голосами) і завантажити базовий набір із 6 рішень?\n\n" +
+      "Учасники та історія залишаться. Дію не можна скасувати."
+    );
+    if (!ok) return;
+    try {
+      await call("POST", "/api/admin/load-base-ideas");
+      toast("Завантажено базовий набір ідей");
     } catch (err) {
       toast(err.message, "error");
     }

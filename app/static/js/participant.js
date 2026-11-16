@@ -168,7 +168,7 @@
     const p = card.parts;
     p.title.textContent = idea.title;
     p.newBadge.hidden = !isNewIdea(idea, state.data.server_time);
-    p.desc.textContent = idea.description;
+    window.WS.setRichText(p.desc, idea.description);
     p.desc.hidden = !idea.description;
     const long = idea.description.length > 170 || idea.description.split("\n").length > 3;
     p.more.hidden = !long;
