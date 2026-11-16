@@ -1293,3 +1293,8 @@ body {
   .qr-overlay img { width: min(50vh, 80vw); }
   .qro-scale { max-width: 92vw; }
 }
+
+/* Шапка: назва й опис воркшопу по центру між двома QR-кодами */
+.sh-title { text-align: center; }
+.sh-main > .sh-row:first-of-type { justify-content: center; }
+.sh-desc { flex: 0 1 auto; text-align: center; }
