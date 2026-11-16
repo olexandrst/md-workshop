@@ -216,7 +216,7 @@ def test_admin_session_invalidated_when_password_changes(app, admin):
 def test_presenter_page(admin):
     response = admin.get("/admin")
     assert response.status_code == 200
-    assert "Презентація" in response.get_data(as_text=True) and "tiles" in response.get_data(as_text=True)
+    assert "Режим презентації" in response.get_data(as_text=True) and "tiles" in response.get_data(as_text=True)
 
 
 def test_idea_crud_with_effects(admin, make_participant):
