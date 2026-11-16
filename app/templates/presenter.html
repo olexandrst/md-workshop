@@ -82,6 +82,9 @@
       <button class="icon-btn" type="button" id="sp-next" title="Наступна (→)" aria-label="Наступна ідея">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
       </button>
+      <button class="icon-btn admin-only" type="button" id="sp-edit" title="Редагувати ідею (E)" aria-label="Редагувати ідею">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </button>
       <button class="icon-btn" type="button" id="sp-close" title="Закрити (Esc)" aria-label="Закрити">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
@@ -92,6 +95,10 @@
       <p class="sp-desc pre-line" id="sp-desc"></p>
       <h3 class="sp-subtitle" id="sp-effects-title">Бізнес-ефекти</h3>
       <ul class="effects sp-effects" id="sp-effects"></ul>
+      <div class="sp-fx-actions admin-only">
+        <button class="btn btn-sm" type="button" id="sp-fx-edit">✎ Редагувати ефекти</button>
+        <button class="btn btn-sm" type="button" id="sp-fx-add">+ Додати ефект</button>
+      </div>
     </div>
     <div class="sp-results">
       <div class="sp-score" id="sp-score"></div>

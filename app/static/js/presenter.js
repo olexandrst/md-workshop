@@ -365,7 +365,7 @@
     $("sp-desc").textContent = idea.description;
     $("sp-desc").hidden = !idea.description;
     $("sp-effects").replaceChildren(...idea.effects.map((e) => effectItem(e, false)));
-    $("sp-effects-title").hidden = idea.effects.length === 0;
+    $("sp-effects-title").hidden = idea.effects.length === 0 && state.present;
 
     $("sp-score").replaceChildren(
       el(
@@ -487,7 +487,8 @@
     $("effects-empty").hidden = $("effects-editor").children.length > 0;
   }
 
-  function openIdeaModal(id) {
+  /** focus: "effects" — прокрутити до ефектів; "add-effect" — одразу додати рядок власного ефекту. */
+  function openIdeaModal(id, focus) {
     const idea = id ? findIdea(id) : null;
     state.editingIdeaId = idea ? idea.id : null;
     $("idea-modal-title").textContent = idea ? "Редагувати ідею" : "Нова ідея";
@@ -497,7 +498,17 @@
     syncEffectChips();
     $("idea-error").hidden = true;
     $("idea-modal").showModal();
-    $("idea-title").focus();
+    if (focus === "add-effect") {
+      addCustomEffect(null);
+      syncEffectChips();
+      $("effect-catalog").scrollIntoView({ block: "start" });
+    } else if (focus === "effects") {
+      $("effect-catalog").scrollIntoView({ block: "start" });
+      const first = $("effects-editor").querySelector("input") || $("effect-catalog").querySelector("button");
+      if (first) first.focus();
+    } else {
+      $("idea-title").focus();
+    }
   }
 
   $("idea-form").addEventListener("submit", async (event) => {
@@ -691,6 +702,9 @@
   document.querySelectorAll(".qr-open").forEach((button) => button.addEventListener("click", () => showQr(true)));
   $("qr-overlay").addEventListener("click", () => showQr(false));
   $("sp-close").addEventListener("click", closeSpotlight);
+  $("sp-edit").addEventListener("click", () => openIdeaModal(state.spotlightId));
+  $("sp-fx-edit").addEventListener("click", () => openIdeaModal(state.spotlightId, "effects"));
+  $("sp-fx-add").addEventListener("click", () => openIdeaModal(state.spotlightId, "add-effect"));
   $("sp-prev").addEventListener("click", () => stepSpotlight(-1));
   $("sp-next").addEventListener("click", () => stepSpotlight(1));
 
@@ -700,6 +714,7 @@
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      if (document.querySelector("dialog[open]")) return; // спершу закривається форма, а не картка
       if (!$("qr-overlay").hidden) return showQr(false);
       if (state.spotlightId !== null) return closeSpotlight();
     }
@@ -711,6 +726,7 @@
       return stepSpotlight(event.key === "ArrowRight" ? 1 : -1);
     }
     const key = event.key.toLowerCase();
+    if (state.spotlightId !== null && !state.present && (key === "e" || key === "у")) return openIdeaModal(state.spotlightId);
     if (key === "p" || key === "з") togglePresent();
     else if (key === "f" || key === "а") toggleFullscreen();
     else if (key === "q" || key === "й") showQr($("qr-overlay").hidden);

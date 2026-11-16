@@ -1302,3 +1302,7 @@ body {
 /* Кнопка повернення керування — помітніша */
 .present-exit { opacity: .6; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
 .present-exit:hover, .present-exit:focus-visible { opacity: 1; }
+
+/* Spotlight: кнопки редагування ефектів */
+.sp-fx-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.sp-fx-actions .btn { min-height: 40px; font-size: 15px; }

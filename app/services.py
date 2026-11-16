@@ -279,6 +279,7 @@ def parse_effects(raw_effects) -> list[tuple[str | None, str]]:
         raise ServiceError("Бізнес-ефекти мають бути списком")
     effects: list[tuple[str | None, str]] = []
     seen_kinds: set[str] = set()
+    seen_custom: set[str] = set()
     for item in raw_effects:
         if isinstance(item, dict):
             kind, text = item.get("kind") or None, item.get("text")
@@ -289,6 +290,10 @@ def parse_effects(raw_effects) -> list[tuple[str | None, str]]:
         text = clean_line(text, "Бізнес-ефект", EFFECT_MAX, required=False)
         if kind is None and not text:
             continue
+        if kind is None:
+            if text.casefold() in seen_custom:
+                continue  # однакові власні ефекти не дублюємо
+            seen_custom.add(text.casefold())
         if kind is not None:
             if kind in seen_kinds:
                 continue

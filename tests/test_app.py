@@ -393,3 +393,11 @@ def test_upgrade_adds_effect_kind_column(app):
         init_db()
         columns = {c["name"] for c in inspect(db.engine).get_columns("business_effect")}
         assert "kind" in columns
+
+
+def test_duplicate_custom_effects_are_merged(admin):
+    response = admin.post(
+        "/api/admin/ideas",
+        json={"title": "X", "effects": [{"kind": None, "text": "Вихід на ЄС"}, {"kind": None, "text": "вихід на єс"}]},
+    )
+    assert [e["text"] for e in response.get_json()["ideas"][0]["effects"]] == ["Вихід на ЄС"]
