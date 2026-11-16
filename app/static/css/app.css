@@ -1262,3 +1262,34 @@ body {
 .sh-stats .stars-legend { flex-wrap: nowrap; }
 .tile-body .tile-effects { overflow: hidden; }
 .tile-body .tile-effects li { max-width: 100%; }
+
+/* Шапка: QR зліва і справа */
+.stage-head { padding: 10px; }
+.stage-head > .qr-open:last-child { margin-left: auto; }
+
+/* Сторінка QR-коду: код + шкала оцінок */
+.qr-overlay { flex-direction: row; gap: 6vw; padding: 4vh 5vw; }
+.qro-main { display: flex; flex-direction: column; align-items: center; gap: 2vh; }
+.qr-overlay img { width: min(62vh, 44vw); }
+.qr-overlay .qro-main h2 { font-size: clamp(24px, 2.6vw, 46px); }
+.qro-scale { text-align: left; max-width: 40vw; }
+.qro-scale h3 { margin: 0 0 3vh; font-size: clamp(22px, 2.1vw, 40px); color: #0b0b0b; }
+.qro-scale ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2.2vh; }
+.qro-item {
+  display: grid; grid-template-columns: 1.6em auto 1fr; align-items: center; gap: 0 18px;
+  padding: 1.3vh 22px; border-radius: 16px; background: #f4f5f8; border: 1px solid #e3e5eb;
+  font-size: clamp(17px, 1.45vw, 28px); color: #1d2033;
+}
+.qro-num { font-weight: 800; font-size: 1.25em; text-align: center; color: #1d2033; }
+.qro-label { font-weight: 600; }
+.stars.qro { --star-size: clamp(18px, 1.5vw, 30px); }
+.qr-overlay .stars-bg { color: #dcdfe6; }
+.qr-overlay .stars-fg { color: #f59e0b; }
+.qro-zero { width: calc(clamp(18px, 1.5vw, 30px) * 5); font-size: .7em; color: #7a7f8f; text-align: center; }
+.qro-item.s5 { background: #fff7e6; border-color: #fbd38d; }
+.qro-note { margin-top: 3vh; font-size: clamp(14px, 1.1vw, 20px); color: #52514e; }
+@media (max-width: 900px), (orientation: portrait) {
+  .qr-overlay { flex-direction: column; gap: 3vh; overflow: auto; }
+  .qr-overlay img { width: min(50vh, 80vw); }
+  .qro-scale { max-width: 92vw; }
+}

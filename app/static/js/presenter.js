@@ -99,12 +99,17 @@
     syncLayout();
   }
 
+  /** Шкала оцінок на сторінці QR-коду: «★★★★★ 5 — Готові пілотувати» тощо. */
   function renderLegend() {
-    $("legend").replaceChildren(
+    $("qr-scale").replaceChildren(
       ...SCORES_DESC.map((score) =>
-        el("span", { class: "legend-item", title: scaleOf(score).label },
-          score ? stars(score, "xs") : el("span", { class: "zero-mark", text: "0" }),
-          scaleOf(score).short)
+        el(
+          "li",
+          { class: `qro-item s${score}` },
+          el("span", { class: "qro-num", text: score }),
+          score ? stars(score, "qro") : el("span", { class: "qro-zero", text: "без зірок" }),
+          el("span", { class: "qro-label", text: scaleOf(score).label })
+        )
       )
     );
   }
@@ -683,7 +688,7 @@
   $("btn-fullscreen").addEventListener("click", toggleFullscreen);
   $("btn-present").addEventListener("click", togglePresent);
   $("present-exit").addEventListener("click", togglePresent);
-  $("qr-open").addEventListener("click", () => showQr(true));
+  document.querySelectorAll(".qr-open").forEach((button) => button.addEventListener("click", () => showQr(true)));
   $("qr-overlay").addEventListener("click", () => showQr(false));
   $("sp-close").addEventListener("click", closeSpotlight);
   $("sp-prev").addEventListener("click", () => stepSpotlight(-1));

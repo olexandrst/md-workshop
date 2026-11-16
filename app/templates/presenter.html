@@ -12,7 +12,7 @@
 {% block body %}
 <div class="stage" id="stage">
   <header class="stage-head" id="stage-head">
-    <button class="qr-card qr-only" id="qr-open" type="button" title="Скануйте, щоб голосувати. Натисніть — QR на весь екран (Q)" aria-label="QR-код для голосування — показати на весь екран">
+    <button class="qr-card qr-only qr-open" type="button" title="Скануйте, щоб голосувати. Натисніть — QR на весь екран (Q)" aria-label="QR-код для голосування — показати на весь екран">
       <img src="{{ url_for('public.qr_code') }}" alt="QR-код сторінки голосування" width="200" height="200">
     </button>
     <div class="sh-main">
@@ -25,7 +25,6 @@
           <span id="voting-pill" class="pill open">Голосування відкрите</span>
           <span class="stat"><b id="stat-participants">0</b> <span id="stat-participants-label">учасників</span></span>
           <span class="stat"><b id="stat-votes">0</b> <span id="stat-votes-label">оцінок</span></span>
-          <div class="stars-legend" id="legend" aria-label="Шкала оцінок"></div>
           <span class="url-warning" id="url-warning" hidden
                 title="Відкрийте цей екран за IP-адресою комп'ютера в локальній мережі або задайте змінну PUBLIC_URL">
             ⚠ QR веде на localhost — телефони його не відкриють
@@ -59,6 +58,9 @@
         </div>
       </div>
     </div>
+    <button class="qr-card qr-only qr-open" type="button" title="Скануйте, щоб голосувати. Натисніть — QR на весь екран (Q)" aria-label="QR-код для голосування — показати на весь екран">
+      <img src="{{ url_for('public.qr_code') }}" alt="QR-код сторінки голосування" width="200" height="200">
+    </button>
   </header>
 
   <span id="qr-url" hidden></span>
@@ -99,9 +101,16 @@
 </div>
 
 <div class="qr-overlay" id="qr-overlay" hidden role="dialog" aria-label="QR-код для голосування">
-  <h2>Скануйте камерою телефону</h2>
-  <img src="{{ url_for('public.qr_code') }}" alt="QR-код сторінки голосування">
-  <p id="qr-overlay-url"></p>
+  <div class="qro-main">
+    <h2>Скануйте камерою телефону</h2>
+    <img src="{{ url_for('public.qr_code') }}" alt="QR-код сторінки голосування">
+    <p id="qr-overlay-url"></p>
+  </div>
+  <div class="qro-scale">
+    <h3>Як оцінювати ідеї</h3>
+    <ul id="qr-scale"></ul>
+    <p class="qro-note">Оцінку можна змінити будь-коли</p>
+  </div>
 </div>
 
 <dialog class="modal" id="idea-modal" aria-labelledby="idea-modal-title">
