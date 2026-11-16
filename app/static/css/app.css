@@ -1298,3 +1298,7 @@ body {
 .sh-title { text-align: center; }
 .sh-main > .sh-row:first-of-type { justify-content: center; }
 .sh-desc { flex: 0 1 auto; text-align: center; }
+
+/* Кнопка повернення керування — помітніша */
+.present-exit { opacity: .6; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.present-exit:hover, .present-exit:focus-visible { opacity: 1; }

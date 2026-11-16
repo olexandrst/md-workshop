@@ -17,7 +17,7 @@
   const state = {
     data: null,
     sort: store.get("ws-sort-v2", "order") === "rank" ? "rank" : "order",
-    present: store.get("ws-present", "0") === "1",
+    present: false, // після перезавантаження кнопки керування завжди видно
     totals: new Map(),
     editingIdeaId: null,
     spotlightId: null,
@@ -647,7 +647,7 @@
 
   function togglePresent() {
     state.present = !state.present;
-    store.set("ws-present", state.present ? "1" : "0");
+    if (state.present) toast("Режим презентації. Повернути кнопки — клавіша P або кнопка справа внизу");
     applyModes();
   }
 
