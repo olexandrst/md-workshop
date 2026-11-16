@@ -901,3 +901,104 @@ body {
 .input:focus, .textarea:focus { box-shadow: 0 0 0 3px var(--accent-soft); }
 .switch input:checked + .track { background: var(--accent); }
 .login-card h1 .accent-text { display: block; }
+
+/* ==========================================================================
+   Спокійний шар: менше контрасту і червоного — червоний лише для суми балів,
+   лідера та акценту в назві. Зірки — золоті.
+   ========================================================================== */
+
+:root {
+  --text: #262a3c;
+  --text-2: #646a7b;
+  --muted: #8d92a1;
+  --line: #eceef3;
+  --border: rgba(38, 42, 60, 0.06);
+  --shadow: 0 1px 2px rgba(38, 42, 60, 0.03), 0 8px 24px rgba(38, 42, 60, 0.05);
+  --dot-color: rgba(38, 42, 60, 0.045);
+  --star: #e9a90f;
+  --star-empty: #e6e7ec;
+  --fill-opacity: .2;
+  --total-ring: rgba(227, 6, 26, 0.08);
+  --total-shadow: rgba(227, 6, 26, 0.16);
+  --chip-bg: #f6f7f9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --text: #e9eaef; --text-2: #aeb2be; --muted: #868b99;
+    --star: #f2b630; --star-empty: #363944; --fill-opacity: .32;
+    --dot-color: rgba(255, 255, 255, 0.035);
+    --total-ring: rgba(255, 43, 58, 0.14); --total-shadow: rgba(0, 0, 0, 0.35);
+  }
+}
+:root[data-theme="dark"] {
+  --text: #e9eaef; --text-2: #aeb2be; --muted: #868b99;
+  --star: #f2b630; --star-empty: #363944; --fill-opacity: .32;
+  --dot-color: rgba(255, 255, 255, 0.035);
+  --total-ring: rgba(255, 43, 58, 0.14); --total-shadow: rgba(0, 0, 0, 0.35);
+}
+
+/* Заголовки — трохи легші */
+.sh-title, .p-header h1, .sp-title { font-weight: 700; }
+.tile-title { font-weight: 650; }
+
+/* Керування на екрані ведучого — нейтральне, без червоного */
+.sh-tools .btn-primary {
+  background: var(--surface); color: var(--text); border: 1px solid var(--line); box-shadow: none;
+}
+.sh-tools .btn-primary:hover { background: var(--surface-2); }
+.seg-toggle { box-shadow: none; border-color: var(--line); background: var(--surface-2); }
+.seg-toggle button[aria-pressed="true"] {
+  background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(38, 42, 60, 0.12);
+}
+.sh-tools .icon-btn { border-color: var(--line); color: var(--text-2); }
+
+/* Статус голосування: нейтральний текст, зелена/сіра крапка */
+.pill { color: var(--text-2); box-shadow: none; border-color: var(--line); font-weight: 600; }
+.pill.open::before { background: var(--good); }
+.pill.closed::before { background: var(--muted); }
+
+/* Плитки: без світіння, лідер — лише тонка лінія зверху */
+.tile.medal-1 { border-color: rgba(227, 6, 26, 0.18); box-shadow: var(--shadow); }
+.tile.medal-1::before { height: 2px; opacity: .8; }
+.tile:hover, .tile:focus-visible { border-color: var(--line); box-shadow: 0 10px 28px rgba(38, 42, 60, 0.09); }
+
+/* Сума балів — головне число, але спокійніше */
+.total-badge { background: var(--total-bg); box-shadow: 0 0 0 4px var(--total-ring), 0 4px 12px var(--total-shadow); }
+.total-badge.xl { box-shadow: 0 0 0 6px var(--total-ring), 0 8px 20px var(--total-shadow); }
+
+/* Бейджі місць — пастельніші, без тіней */
+.rank-badge { font-weight: 700; }
+.medal-1 .rank-badge { background: var(--accent); box-shadow: none; }
+.medal-2 .rank-badge { background: #5b6175; box-shadow: none; }
+.medal-3 .rank-badge { background: #9ba0b0; box-shadow: none; }
+
+/* Ефекти — нейтральні чіпи, іконки графітові */
+.effects li { border-color: transparent; background: var(--chip-bg); color: var(--text-2); }
+.effects li b { font-weight: 600; color: var(--text); }
+.fx-icon { color: var(--muted); }
+.effects li.fx-custom::before { background: var(--muted); }
+.fx-chip[aria-pressed="true"] { background: var(--surface-2); border-color: var(--text-2); }
+.fx-chip[aria-pressed="true"]::after { color: var(--text); }
+.fx-chip:hover { border-color: var(--text-2); }
+.fx-chip .fx-icon { color: var(--text-2); }
+.fx-tag { background: var(--surface-2); font-weight: 600; }
+
+/* Гістограма — легша */
+.hist-row { background: var(--chip-bg); }
+.hist-label, .hist-count { font-weight: 600; }
+.hist-names { color: var(--muted); }
+.hist-row.is-zero { color: #b3b7c2; }
+.hist-row.is-zero .stars, .hist-row.is-zero .stars-none { opacity: .35; }
+.avg-num, .sp-avg b { font-weight: 700; }
+
+/* Бейдж «Нова» — менший і пласкіший */
+.new-badge { background: var(--accent); box-shadow: none; font-size: 11px; padding: 3px 9px; }
+
+/* Сторінка учасника */
+.score-btn[aria-checked="true"].s0, .score-btn[aria-checked="true"].s1, .score-btn[aria-checked="true"].s2,
+.score-btn[aria-checked="true"].s3, .score-btn[aria-checked="true"].s5 { background: var(--accent); box-shadow: none; }
+.score-btn { border-color: var(--line); }
+.score-btn:hover { border-color: var(--text-2); }
+.btn-primary { box-shadow: 0 4px 12px rgba(227, 6, 26, 0.16); }
+.brand-chip { box-shadow: none; border-color: var(--line); }
+.progress-bar i { background: var(--accent); }
