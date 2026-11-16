@@ -3,7 +3,8 @@
 {% block body %}
 <main class="login-wrap">
   <form class="card login-card" method="post" action="{{ url_for('admin.login') }}">
-    <h1>Вхід ведучого</h1>
+    <span class="brand-chip" style="margin-bottom:14px">{{ brand_name }}</span>
+    <h1>Вхід <span class="accent-text">ведучого</span></h1>
     <p>{{ workshop.title }}</p>
     {% with messages = get_flashed_messages() %}
       {% for message in messages %}<div class="form-error" role="alert">{{ message }}</div>{% endfor %}

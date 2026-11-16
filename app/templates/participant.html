@@ -2,7 +2,8 @@
 {% block body %}
 <div class="p-wrap">
   <header class="p-header">
-    <h1 id="ws-title">{{ workshop.title }}</h1>
+    <span class="brand-chip">{{ brand_name }}</span>
+    <h1 id="ws-title">{{ title_html(workshop.title) }}</h1>
     <p id="ws-desc" class="p-desc pre-line"{% if not workshop.description %} hidden{% endif %}>{{ workshop.description }}</p>
   </header>
 

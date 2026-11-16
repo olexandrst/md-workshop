@@ -148,6 +148,7 @@ QR-код автоматично використовує публічну https
 | `DATABASE_URL` | SQLite `instance/workshop.db` | PostgreSQL: `postgresql://…` або `postgres://…`. |
 | `SECRET_KEY` | генерується в `instance/secret_key` | Підпис cookie-сесій. На сервері задавайте явно. |
 | `PUBLIC_URL` | визначається автоматично | Адреса, яку кодує QR (тунель, Docker, власний домен). |
+| `BRAND_NAME`, `BRAND_TAGLINE` | `Metinvest Digital`, `Воркшоп` | Назва бренду в шапці екрана, на сторінці учасника та вході. |
 | `SEED_DEMO` | `true` | Додати демо-ідеї для меблевого бізнесу при створенні **нової** бази. |
 | `PORT` | `5000` (run.py) / `8000` (gunicorn) | Порт сервера. |
 | `WEB_CONCURRENCY`, `GUNICORN_THREADS` | `2`, `8` | Процеси та потоки gunicorn. |

@@ -45,7 +45,7 @@
   function render() {
     const d = state.data;
     $("loading").hidden = true;
-    $("ws-title").textContent = d.workshop.title;
+    window.WS.setTitle($("ws-title"), d.workshop.title);
     document.title = d.workshop.title;
     $("ws-desc").textContent = d.workshop.description;
     $("ws-desc").hidden = !d.workshop.description;

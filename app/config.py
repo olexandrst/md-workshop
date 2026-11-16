@@ -64,6 +64,8 @@ def load_config() -> dict:
         "ADMIN_PASSWORD": os.environ.get("ADMIN_PASSWORD", "").strip() or "digital",
         "PUBLIC_URL": os.environ.get("PUBLIC_URL", "").strip().rstrip("/"),
         "SEED_DEMO": env_bool("SEED_DEMO", True),
+        "BRAND_NAME": os.environ.get("BRAND_NAME", "").strip() or "Metinvest Digital",
+        "BRAND_TAGLINE": os.environ.get("BRAND_TAGLINE", "").strip() or "Воркшоп",
         "SESSION_COOKIE_SAMESITE": "Lax",
         "SESSION_COOKIE_HTTPONLY": True,
         "SESSION_COOKIE_SECURE": env_bool("SESSION_COOKIE_SECURE", on_render),

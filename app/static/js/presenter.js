@@ -72,7 +72,7 @@
     const d = state.data;
     const ws = d.workshop;
     document.title = `Екран ведучого · ${ws.title}`;
-    $("ws-title").textContent = ws.title;
+    window.WS.setTitle($("ws-title"), ws.title);
     $("ws-desc").textContent = ws.description;
     $("ws-desc").classList.toggle("is-empty", !ws.description);
 

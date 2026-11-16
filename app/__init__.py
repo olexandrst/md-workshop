@@ -63,7 +63,11 @@ def create_app(overrides: dict | None = None) -> Flask:
 
     @app.context_processor
     def _template_globals():
-        return {"asset_v": asset_v}
+        return {
+            "asset_v": asset_v,
+            "brand_name": app.config["BRAND_NAME"],
+            "brand_tagline": app.config["BRAND_TAGLINE"],
+        }
 
     @app.errorhandler(ServiceError)
     def _service_error(err: ServiceError):

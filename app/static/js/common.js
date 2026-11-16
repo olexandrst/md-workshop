@@ -274,7 +274,19 @@
     return el("li", { class: `fx fx-${effect.kind}`, title: tooltip }, effectIcon(effect.kind), body);
   }
 
+  /** Назва з червоною частиною після двокрапки: «Воркшоп: <червоне>ІТ-рішення…</червоне>». */
+  function setTitle(node, title) {
+    const index = title.indexOf(":");
+    const tail = index >= 0 ? title.slice(index + 1).trim() : "";
+    if (index < 0 || !tail) {
+      node.textContent = title;
+      return;
+    }
+    node.replaceChildren(`${title.slice(0, index)}: `, el("span", { class: "accent-text", text: tail }));
+  }
+
   window.WS = {
+    setTitle,
     boot, SCALE, api, ApiError, el, plural, fmt, FORMS, scaleItem, segBar, toast, poller,
     stars, setStars, isNewIdea, EFFECT_CATALOG, effectMeta, effectIcon, effectItem,
   };

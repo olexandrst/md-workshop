@@ -12,8 +12,15 @@
 {% block body %}
 <div class="stage" id="stage">
   <header class="stage-head" id="stage-head">
+    <div class="brand" aria-label="{{ brand_name }}">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text">
+        <span class="brand-name">{{ brand_name }}</span>
+        <span class="brand-tagline">{{ brand_tagline }}</span>
+      </span>
+    </div>
     <div class="sh-main">
-      <h1 id="ws-title" class="sh-title editable" title="Натисніть, щоб змінити назву та пояснення">{{ workshop.title }}</h1>
+      <h1 id="ws-title" class="sh-title editable" title="Натисніть, щоб змінити назву та пояснення">{{ title_html(workshop.title) }}</h1>
       <div class="sh-row">
         <p id="ws-desc" class="sh-desc editable" title="Натисніть, щоб змінити назву та пояснення">{{ workshop.description }}</p>
         <div class="stars-legend" id="legend" aria-label="Шкала оцінок"></div>
@@ -30,8 +37,8 @@
         </div>
         <div class="sh-tools admin-only" role="toolbar" aria-label="Керування">
           <div class="seg-toggle" role="group" aria-label="Сортування ідей">
-            <button type="button" data-sort="order" aria-pressed="true" title="Нові ідеї зверху">За порядком</button>
-            <button type="button" data-sort="rank" aria-pressed="false" title="Сума балів, далі середній бал">За рейтингом</button>
+            <button type="button" data-sort="order" aria-pressed="true" title="За порядком: нові ідеї зверху">Порядок</button>
+            <button type="button" data-sort="rank" aria-pressed="false" title="За рейтингом: сума балів, далі середній бал">Рейтинг</button>
           </div>
           <button class="btn btn-primary btn-sm" id="btn-add" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -50,7 +57,9 @@
           <button class="icon-btn" id="btn-fullscreen" type="button" title="На весь екран (F)" aria-label="На весь екран">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
           </button>
-          <button class="btn btn-sm" id="btn-present" type="button" title="Сховати кнопки керування (P)">Презентація</button>
+          <button class="icon-btn" id="btn-present" type="button" title="Режим презентації — сховати керування (P)" aria-label="Режим презентації">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="m10 7 5 3-5 3z"/></svg>
+          </button>
         </div>
       </div>
     </div>
