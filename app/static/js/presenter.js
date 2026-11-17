@@ -363,6 +363,7 @@
     $("sp-new").hidden = !isNewIdea(idea, state.data.server_time);
     $("sp-counter").textContent = `${ids.indexOf(idea.id) + 1} / ${ids.length}`;
     window.WS.setRichText($("sp-desc"), idea.description);
+    sp.classList.toggle("is-dense", idea.description.length > 1100);
     $("sp-desc").hidden = !idea.description;
     $("sp-effects").replaceChildren(...idea.effects.map((e) => effectItem(e, false)));
     $("sp-effects-title").hidden = idea.effects.length === 0 && state.present;

@@ -250,6 +250,7 @@
     inventory: '<path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>',
     customer: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
     control: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+    talent: '<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>',
     risk: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
   };
 
@@ -287,20 +288,25 @@
   }
 
   /** Опис ідеї: рядки «Проблема:», «Рішення:», «Зв'язок:» отримують виділену мітку. */
-  const SECTION_RE = /^(Проблема|Рішення|Зв['’]язок|Ефекти|Результат)\s*:\s*/;
+  const SECTION_RE = /^(Проблема|Рішення|Функціонал|Зв['’]язок|Ефекти|Результат)\s*:\s*/;
+  const BULLET_RE = /^(•\s*)([^—]{2,80}?)\s+—\s+/;
   function setRichText(node, text) {
     const parts = [];
     (text || "").split("\n").forEach((line, index) => {
       if (index) parts.push("\n");
       const match = line.match(SECTION_RE);
+      const bullet = !match && line.match(BULLET_RE);
       if (match) {
         parts.push(el("b", { class: "desc-label", text: match[1] }), " ", line.slice(match[0].length));
+      } else if (bullet) {
+        parts.push(bullet[1], el("b", { class: "desc-bullet", text: bullet[2] }), " — ", line.slice(bullet[0].length));
       } else {
         parts.push(line);
       }
     });
     node.replaceChildren(...parts);
     node.classList.toggle("is-long", (text || "").length > 500);
+    node.classList.toggle("is-xlong", (text || "").length > 1100);
   }
 
   window.WS = {

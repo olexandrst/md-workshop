@@ -485,7 +485,7 @@ def test_load_base_ideas_replaces_everything(admin, make_idea, make_participant)
     c.post("/api/vote", json={"idea_id": idea["id"], "score": 5})
     state = admin.post("/api/admin/load-base-ideas").get_json()
     titles = [i["title"] for i in state["ideas"]]
-    assert titles[0] == "Розумне планування виробництва" and len(titles) == 6
+    assert titles[0] == "Розумне планування виробництва (APS)" and len(titles) == 6
     assert "Стара ідея" not in titles
     assert all(len(i["effects"]) == 4 and all(e["kind"] for e in i["effects"]) for i in state["ideas"])
     assert sum(i["results"]["votes"] for i in state["ideas"]) == 0

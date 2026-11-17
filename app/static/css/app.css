@@ -1374,3 +1374,14 @@ body {
 .sp-desc.is-long { font-size: clamp(15px, 1.02vw, 20px); line-height: 1.42; }
 .sp-desc .desc-label { font-size: .8em; }
 .idea-desc .desc-label { font-size: .75em; padding: 0 7px; }
+.desc-bullet { color: var(--text); font-weight: 650; }
+.sp-desc.is-xlong { font-size: clamp(13.5px, .86vw, 17px); line-height: 1.38; }
+
+/* Spotlight для довгих описів: щільніше, щоб усе вміщалось на екрані */
+.spotlight.is-dense { gap: 2vh; padding: 3vh 3.5vw; }
+.spotlight.is-dense .sp-title { font-size: clamp(26px, min(2.5vw, 4.6vh), 50px); }
+.spotlight.is-dense .sp-desc.is-xlong { font-size: clamp(12.5px, min(.84vw, 1.62vh), 17px); line-height: 1.36; }
+.spotlight.is-dense .sp-subtitle { margin: 1.8vh 0 8px; }
+.spotlight.is-dense .sp-effects { gap: 6px; }
+.spotlight.is-dense .sp-effects li { font-size: clamp(13px, min(.95vw, 1.8vh), 19px); padding: 5px 13px; }
+.spotlight.is-dense .sp-fx-actions { margin-top: 10px; }
